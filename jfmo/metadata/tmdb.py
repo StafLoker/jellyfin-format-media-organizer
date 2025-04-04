@@ -49,13 +49,14 @@ class TMDBClient:
             
         url = f"{self.BASE_URL}/{endpoint}"
         
-        # Add API key to parameters
-        if params is None:
-            params = {}
-        params['api_key'] = self.api_key
+        # Create headers with Bearer token
+        headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json;charset=utf-8'
+        }
         
         try:
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, headers=headers)
             response.raise_for_status()  # Raise an exception for HTTP errors
             return response.json()
         except requests.exceptions.RequestException as e:
