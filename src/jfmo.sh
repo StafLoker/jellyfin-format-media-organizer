@@ -17,12 +17,15 @@ FILMS="$MEDIA_DIR/films"
 SERIES="$MEDIA_DIR/series"
 
 # CONFIGURATION
-# Change to true to move files instead of copying them
-MOVE_FILES=false
 # Change to true to generate a detailed log
 VERBOSE=true
 # Log file
 LOG_FILE="/tmp/jfmo.log"
+
+# Default user and group for media files
+# Change these to match your Jellyfin user/group
+MEDIA_USER="jellyfin"
+MEDIA_GROUP="media"
 
 # Start log
 echo "$(date) - Starting media organization" > "$LOG_FILE"
@@ -107,31 +110,36 @@ detect_season_episode() {
     return 1  # No season/episode pattern found
 }
 
-# Function to move or copy files
-move_or_copy() {
+# Function to move files with proper permissions
+move_file() {
     source_file="$1"
     dest_file="$2"
     
     # Create destination directory if it doesn't exist
-    mkdir -p "$(dirname "$dest_file")"
-    
-    if [ "$MOVE_FILES" = true ]; then
-        echo -e "${BLUE}Moving:${NC} $source_file -> $dest_file"
-        mv "$source_file" "$dest_file"
-        result=$?
-        log "MOVING: $source_file -> $dest_file (result: $result)"
-    else
-        echo -e "${BLUE}Copying:${NC} $source_file -> $dest_file"
-        cp "$source_file" "$dest_file"
-        result=$?
-        log "COPYING: $source_file -> $dest_file (result: $result)"
+    dest_dir="$(dirname "$dest_file")"
+    if [ ! -d "$dest_dir" ]; then
+        mkdir -p "$dest_dir"
+        # Set proper permissions for the created directory
+        chown $MEDIA_USER:$MEDIA_GROUP "$dest_dir"
+        chmod 775 "$dest_dir"  # rwxrwxr-x
     fi
     
+    echo -e "${BLUE}Moving:${NC} $source_file -> $dest_file"
+    
+    # Move the file
+    mv "$source_file" "$dest_file"
+    result=$?
+    
+    # Set proper permissions for the moved file
     if [ $result -eq 0 ]; then
+        chown $MEDIA_USER:$MEDIA_GROUP "$dest_file"
+        chmod 664 "$dest_file"  # rw-rw-r--
         echo -e "${GREEN}✓ Success${NC}"
+        log "MOVING: $source_file -> $dest_file (result: $result)"
         return 0
     else
         echo -e "${RED}✗ Error${NC}"
+        log "ERROR MOVING: $source_file -> $dest_file (result: $result)"
         return 1
     fi
 }
@@ -182,14 +190,13 @@ process_series() {
         # Create series and season directories
         series_dir="$SERIES/$series_name$year_suffix"
         season_dir="$series_dir/Season $season_num"
-        mkdir -p "$season_dir"
         
         # Format episode name (keep original extension)
         extension="${filename##*.}"
         new_filename="$series_name S${season_num}E${episode_num}${quality_suffix}.${extension}"
         
-        # Move or copy file
-        move_or_copy "$file" "$season_dir/$new_filename"
+        # Move file
+        move_file "$file" "$season_dir/$new_filename"
     else
         echo -e "${RED}⚠️ Could not detect series pattern for:${NC} $filename"
         log "ERROR: Could not detect series pattern for: $filename"
@@ -234,10 +241,15 @@ process_movie() {
     fi
     
     # Create movies directory if it doesn't exist
-    mkdir -p "$FILMS"
+    if [ ! -d "$FILMS" ]; then
+        mkdir -p "$FILMS"
+        # Set proper permissions
+        chown $MEDIA_USER:$MEDIA_GROUP "$FILMS"
+        chmod 775 "$FILMS"  # rwxrwxr-x
+    fi
     
-    # Move or copy file
-    move_or_copy "$file" "$FILMS/$new_filename"
+    # Move file
+    move_file "$file" "$FILMS/$new_filename"
 }
 
 # Special function for series directories like "La Casa de Papel 3"
@@ -266,7 +278,6 @@ process_special_series_dir() {
         # Create structure
         series_dir="$SERIES/$series_name"
         season_dir="$series_dir/Season $season_num"
-        mkdir -p "$season_dir"
         
         echo -e "${BLUE}Special series detected:${NC} $dir_name"
         log "Special series detected: $dir_name"
@@ -284,9 +295,16 @@ process_special_series_dir() {
             # Format final name
             new_filename="$series_name S${season_num}E${episode_num}${quality_suffix}.${filename##*.}"
             
-            # Move or copy file
-            move_or_copy "$episode" "$season_dir/$new_filename"
+            # Move file
+            move_file "$episode" "$season_dir/$new_filename"
         done
+        
+        # After moving all files, remove empty directory
+        if [ -z "$(ls -A "$dir")" ]; then
+            echo -e "${YELLOW}Removing empty directory:${NC} $dir"
+            rmdir "$dir"
+            log "REMOVED EMPTY DIRECTORY: $dir"
+        fi
         
         return 0
     fi
@@ -326,7 +344,6 @@ process_series_dir() {
     
     # Create series directory
     series_dir="$SERIES/$clean_series$year_suffix"
-    mkdir -p "$series_dir"
     
     echo -e "${BLUE}Processing series directory:${NC} $dir_name"
     
@@ -350,32 +367,35 @@ process_series_dir() {
             
             # Create season directory
             season_dir="$series_dir/Season $season_num"
-            mkdir -p "$season_dir"
             
             # Format episode name
             new_filename="$clean_series S${season_num}E${episode_num}${quality_suffix}.${filename##*.}"
             
-            # Move or copy file
-            move_or_copy "$episode" "$season_dir/$new_filename"
+            # Move file
+            move_file "$episode" "$season_dir/$new_filename"
         else
             echo -e "${RED}⚠️ Could not detect episode pattern for:${NC} $filename"
             log "ERROR: Could not detect episode pattern for: $filename"
         fi
     done
+    
+    # After moving all files, remove empty directory
+    if [ -z "$(ls -A "$dir")" ]; then
+        echo -e "${YELLOW}Removing empty directory:${NC} $dir"
+        rmdir "$dir"
+        log "REMOVED EMPTY DIRECTORY: $dir"
+    fi
 }
 
 # Main function
 main() {
     echo -e "${GREEN}🎬 JELLYFIN FORMAT MEDIA ORGANIZER${NC}"
-    if [ "$MOVE_FILES" = true ]; then
-        echo -e "${YELLOW}MODE: MOVE${NC} - Files will be moved to their destinations"
-    else
-        echo -e "${YELLOW}MODE: COPY${NC} - Files will be copied to their destinations (originals will remain)"
-    fi
+    echo -e "${YELLOW}MODE: MOVE${NC} - Files will be moved to their destinations and empty directories will be removed"
     echo ""
     echo -e "${BLUE}📂 Downloads directory:${NC} $DOWNLOADS"
     echo -e "${BLUE}🎥 Movies directory:${NC} $FILMS"
     echo -e "${BLUE}📺 TV Shows directory:${NC} $SERIES"
+    echo -e "${BLUE}👤 Media ownership:${NC} $MEDIA_USER:$MEDIA_GROUP"
     echo -e "${BLUE}📄 Log file:${NC} $LOG_FILE"
     echo ""
     
@@ -383,6 +403,19 @@ main() {
     if [ ! -d "$DOWNLOADS" ]; then
         echo -e "${RED}Error: Downloads directory does not exist${NC}"
         exit 1
+    fi
+    
+    # Make sure series and films directories exist with proper permissions
+    if [ ! -d "$SERIES" ]; then
+        mkdir -p "$SERIES"
+        chown $MEDIA_USER:$MEDIA_GROUP "$SERIES"
+        chmod 775 "$SERIES"
+    fi
+    
+    if [ ! -d "$FILMS" ]; then
+        mkdir -p "$FILMS"
+        chown $MEDIA_USER:$MEDIA_GROUP "$FILMS"
+        chmod 775 "$FILMS"
     fi
     
     log "Starting processing of individual files"
@@ -417,14 +450,15 @@ main() {
     
     echo ""
     echo -e "${GREEN}✅ PROCESS COMPLETED${NC}"
-    if [ "$MOVE_FILES" = false ]; then
-        echo -e "${YELLOW}NOTE: Original files have not been deleted.${NC}"
-        echo -e "${YELLOW}      To delete originals, modify the MOVE_FILES=true variable in the script.${NC}"
-    fi
-    
-    log "Process completed"
     echo -e "${BLUE}A detailed log has been saved at: $LOG_FILE${NC}"
 }
+
+# Check if running as root, which is required for permission changes
+if [ "$(id -u)" != "0" ]; then
+    echo -e "${RED}Error: This script must be run as root to set proper permissions${NC}"
+    echo -e "${YELLOW}Please run: sudo $0${NC}"
+    exit 1
+fi
 
 # Run main function
 main

@@ -1,6 +1,6 @@
 # Jellyfin Format Media Organizer
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![Bash](https://img.shields.io/badge/language-bash-green.svg)
 
 A powerful media organization tool designed to automatically structure and rename your media files according to Jellyfin's recommended naming conventions.
@@ -15,6 +15,8 @@ This tool helps you organize your downloaded media files (movies and TV shows) b
 - Creating proper directory structures
 - Renaming files to match Jellyfin's recommended format
 - Handling special cases (series with numbered seasons in the title)
+- Setting correct permissions and ownership for Jellyfin
+- Removing empty directories after processing
 
 Perfect for maintaining a clean, consistent, and Jellyfin-friendly media library.
 
@@ -28,7 +30,8 @@ Perfect for maintaining a clean, consistent, and Jellyfin-friendly media library
 - **Name Cleanup**: Removes unnecessary prefixes like `[NOOBDL]` and suffixes like `LostFilm.TV`
 - **Multiple Patterns**: Recognizes various episode naming patterns (S01E01, S01.E01, etc.)
 - **Special Cases**: Handles edge cases like `La Casa de Papel 3`
-- **Safety First**: Offers both test mode and copy mode (instead of move) for safe operation
+- **Proper Permissions**: Sets correct ownership (`jellyfin:media`) and permissions for all processed files
+- **Directory Cleanup**: Automatically removes empty directories after files are moved
 - **Detailed Logging**: Maintains comprehensive logs of all operations
 
 ## Requirements
@@ -36,6 +39,7 @@ Perfect for maintaining a clean, consistent, and Jellyfin-friendly media library
 - Bash shell environment
 - Linux/Unix-based system
 - Standard text processing utilities (sed, grep)
+- Root permissions (to set proper file ownership)
 
 ## Installation
 
@@ -67,19 +71,17 @@ This will analyze your media files and show you a detailed report of how they wo
 
 ### Step 2: Run the Organizer
 
-When you're satisfied with the proposed changes, run the main script:
+When you're satisfied with the proposed changes, run the main script with sudo (required for changing file permissions):
 
 ```bash
-./jfmo.sh
+sudo ./jfmo.sh
 ```
 
-If permission deny, use:
-
-```bash
-sudo bash -c './jfmo.sh'
-```
-
-By default, this will copy your files to their new locations (originals remain untouched).
+The script will:
+- Move your files to their proper locations
+- Rename them according to Jellyfin conventions
+- Set the correct ownership and permissions
+- Delete empty source directories
 
 ## Configuration
 
@@ -87,7 +89,7 @@ Edit the scripts to customize their behavior:
 
 ### Basic Configuration
 
-At the top of each script, you'll find variables you can modify:
+At the top of the main script, you'll find variables you can modify:
 
 ```bash
 # Base directories
@@ -97,9 +99,12 @@ FILMS="$MEDIA_DIR/films"
 SERIES="$MEDIA_DIR/series"
 
 # CONFIGURATION
-MOVE_FILES=false    # Set to true to move files instead of copying
 VERBOSE=true        # Set to false for less detailed logs
-LOG_FILE="/tmp/jellyfin_organizer.log"
+LOG_FILE="/tmp/jfmo.log"
+
+# Default user and group for media files
+MEDIA_USER="jellyfin"
+MEDIA_GROUP="media"
 ```
 
 ## Directory Structure
@@ -127,7 +132,8 @@ The scripts expect and create the following directory structure:
 ### After:
 ```
 /data/media/
-├── downloads/ (original files)
+├── downloads/
+│   └── incomplete/  # Only incomplete downloads remain
 ├── films/
 │   └── The Gorge (2025) - [2160p].mkv
 └── series/
@@ -141,11 +147,13 @@ The scripts expect and create the following directory structure:
             └── ...
 ```
 
+All files will have proper jellyfin:media ownership and correct permissions (775 for directories, 664 for files).
+
 ## Troubleshooting
 
 - **Files not detected properly**: Check that they match one of the supported patterns
-- **Permission issues**: Ensure the script has proper permissions to read/write in the directories
-- **Log file**: Check the log file for detailed error information (`/tmp/jellyfin_organizer.log` by default)
+- **Permission issues**: Ensure you're running the script with sudo (`sudo ./jfmo.sh`)
+- **Log file**: Check the log file for detailed error information (`/tmp/jfmo.log` by default)
 
 ## License
 
@@ -153,6 +161,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Version History
 
+- **1.1.0** (Current)
+  - Now always moves files instead of copying
+  - Sets proper ownership (jellyfin:media) and permissions
+  - Automatically removes empty directories after processing
+  - Requires sudo to run properly
 - **1.0.0** (Initial Release)
   - Basic functionality for organizing movies and TV shows
   - Test mode for safe operation
