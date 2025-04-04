@@ -1,6 +1,6 @@
 # Jellyfin Format Media Organizer
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Bash](https://img.shields.io/badge/language-bash-green.svg)
 
 A powerful media organization tool designed to automatically structure and rename your media files according to Jellyfin's recommended naming conventions.
