@@ -44,6 +44,9 @@ clean_name() {
     
     # Remove suffixes like "- LostFilm.TV" or similar
     name=$(echo "$name" | sed -E 's/ ?- ?LostFilm\.TV.*//g')
+
+    # Remove alternative titles in parentheses (e.g., "Расплата (The Accountant)")
+    name=$(echo "$name" | sed -E 's/ ?\([^)]+\)//g')
     
     # Convert dots, hyphens and underscores to spaces
     name=$(echo "$name" | sed 's/\./\ /g' | sed 's/\_/\ /g' | sed 's/\-/\ /g' | sed 's/\*//' | sed 's/  / /g' | sed 's/^ //g' | sed 's/ $//g')
@@ -201,7 +204,8 @@ process_movie() {
     log "Processing movie: $filename"
     
     # Clean movie name
-    clean_title=$(clean_name "$filename")
+    filename_noext="${filename%.*}"
+    clean_title=$(clean_name "$filename_noext")
     year=$(get_year "$filename")
     quality=$(get_quality "$filename")
     
