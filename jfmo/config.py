@@ -6,10 +6,14 @@ Configuration module for Jellyfin Format Media Organizer
 """
 
 import os
+from . import __version__
 
 
 class Config:
     """Configuration class for JFMO"""
+    # Version
+    VERSION = __version__
+    
     # Default paths
     MEDIA_DIR = "/data/media"
     DOWNLOADS = f"{MEDIA_DIR}/downloads"

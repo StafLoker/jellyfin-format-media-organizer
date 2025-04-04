@@ -17,6 +17,8 @@ from .cli import parse_args, check_root, check_dependencies, handle_config_optio
 def print_header():
     """Print JFMO header information"""
     print(f"{Colors.GREEN}🎬 JELLYFIN FORMAT MEDIA ORGANIZER{Colors.NC}")
+    print(f"{Colors.GREEN}Version: {Config.VERSION}{Colors.NC}")
+    print("")
     
     if Config.TEST_MODE:
         print(f"{Colors.YELLOW}MODE: TEST{Colors.NC} - No actual file operations will be performed")
@@ -122,7 +124,9 @@ def main():
     print("")
     print(f"{Colors.GREEN}✅ PROCESS COMPLETED{Colors.NC}")
     print(f"{Colors.BLUE}A detailed log has been saved at: {Config.LOG_FILE}{Colors.NC}")
+    
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
