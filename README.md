@@ -11,6 +11,7 @@ JFMO is a powerful media organization tool designed to automatically structure a
 - **Smart Media Detection** - Automatically identifies movies and TV shows
 - **Proper Jellyfin Naming** - Renames files to Jellyfin's recommended format
 - **TMDB Integration** - Adds TMDB IDs to filenames for better Jellyfin matching
+- **Interactive Mode** - Helps you select the correct match when multiple options exist
 - **Auto-Transliteration** - Converts transliterated names to their native scripts (Cyrillic, etc.)
 - **Permissions Management** - Sets correct ownership and permissions for Jellyfin
 - **Directory Structure** - Creates proper directory hierarchies for TV shows
@@ -104,6 +105,51 @@ sudo -E $(pipx environment -v | grep PIPX_SHARED_LIBS | awk -F'"' '{print $2}')/
 
 The `-E` flag preserves environment variables including your TMDB API key if set.
 
+## Interactive Mode
+
+JFMO features an interactive mode that helps you manually select the correct match when TMDB returns multiple possible results for a media file.
+
+### How It Works
+
+1. When JFMO finds multiple possible matches for a movie or TV show, it will present you with a list of options
+2. For each option, it displays:
+   - Title and year
+   - TMDB ID
+   - A brief overview (if available)
+3. You can:
+   - Select a match by number
+   - Skip the file (leave it untouched)
+   - Quit the program
+
+### Example Interactive Selection
+
+```
+============================================================
+Multiple TV Show matches found for:
+Original file: The.Office.S01E01.1080p.mkv
+Search query: The Office
+============================================================
+[1] The Office (2005) [tmdbid-2316]
+    Overview: A mockumentary on a group of typical office workers...
+[2] The Office (2001) [tmdbid-1084]
+    Overview: The story of an office that faces closure when...
+[3] The Office (2019) [tmdbid-86328]
+    Overview: Working in an office environment can be challenging...
+------------------------------------------------------------
+[s] Skip (leave file untouched)
+[q] Quit
+------------------------------------------------------------
+Please select an option [1-3, s, q]: 
+```
+
+### Enabling/Disabling Interactive Mode
+
+Interactive mode is enabled by default, but can be controlled in several ways:
+
+1. **Command line**: `--non-interactive` flag disables it
+2. **Configuration file**: Set `"interactive": false` in the "options" section
+3. **Test mode**: Interactive mode is automatically disabled during test runs
+
 ## Configuration
 
 JFMO can be configured via command line arguments or through a configuration file.
@@ -141,6 +187,9 @@ Edit the generated file to match your environment:
     "logging": {
         "log_file": "/tmp/jfmo.log",
         "verbose": true
+    },
+    "options": {
+        "interactive": true
     }
 }
 ```
@@ -176,7 +225,8 @@ JFMO can integrate with The Movie Database (TMDB) to add TMDB IDs to your media 
 When processing media files, JFMO will:
 1. Search TMDB for the movie or TV show title
 2. If found, extract the TMDB ID and correct release year
-3. Add the TMDB ID to the filename in a format Jellyfin recognizes:
+3. If multiple matches are found, use interactive mode to let you choose
+4. Add the TMDB ID to the filename in a format Jellyfin recognizes:
    - For movies: `Title (Year) [tmdbid-12345].mkv`
    - For series: `Series Name (Year) [tmdbid-67890]/Season 01/Series Name S01E01.mkv`
 
@@ -212,6 +262,7 @@ Options:
   --version               Show version and exit
   --test                  Run in test mode (no actual changes made)
   --quiet                 Suppress log messages
+  --non-interactive       Disable interactive mode
   -h, --help              Show this help message
 
 Configuration File Options:
@@ -222,7 +273,7 @@ Directory Options:
   --media-dir DIRECTORY   Base media directory
   --downloads DIRECTORY   Downloads directory
   --films DIRECTORY       Films directory
-  --series DIRECTORY      TV Series directory
+  --series DIRECTORY      TV series directory
 
 File and Permission Options:
   --user USERNAME         Media files owner

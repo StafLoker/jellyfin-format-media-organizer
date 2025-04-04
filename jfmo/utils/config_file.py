@@ -35,6 +35,9 @@ class ConfigFileHandler:
         "logging": {
             "log_file": "/tmp/jfmo.log",
             "verbose": True
+        },
+        "options": {
+            "interactive": True
         }
     }
     
@@ -142,6 +145,12 @@ class ConfigFileHandler:
                     Config.LOG_FILE = logging['log_file']
                 if 'verbose' in logging:
                     Config.VERBOSE = logging['verbose']
+                    
+            # Update options
+            if 'options' in config_data:
+                options = config_data['options']
+                if 'interactive' in options:
+                    Config.INTERACTIVE_MODE = options['interactive']
             
             return True
         except Exception as e:

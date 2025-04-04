@@ -30,6 +30,7 @@ class Config:
     # Runtime options
     TEST_MODE = False
     VERBOSE = True
+    INTERACTIVE_MODE = True  # Enable interactive mode by default
     
     # Supported languages for transliteration
     TRANSLITERATION_LANGS = ['ru', 'uk', 'bg', 'mk', 'sr', 'el', 'ka', 'hy', 'he']
@@ -46,6 +47,7 @@ class Config:
         """Update configuration from command line arguments"""
         cls.TEST_MODE = args.test
         cls.VERBOSE = not args.quiet
+        cls.INTERACTIVE_MODE = not args.non_interactive
         
         # Update paths if provided
         if args.media_dir:

@@ -9,6 +9,7 @@ import os
 import re
 from ..config import Config
 from ..utils import FileOps, Colors, Logger
+from ..utils.interactive_ui import InteractiveUI
 from ..metadata import TMDBClient
 from .media_processor import MediaProcessor
 
@@ -20,28 +21,29 @@ class MovieProcessor(MediaProcessor):
         """Initialize the processor"""
         super().__init__()
         # Initialize TMDB client if enabled
-        self.tmdb_client = TMDBClient() if Config.TMDB_ENABLED else None
+        self.tmdb_client = TMDBClient(interactive=Config.INTERACTIVE_MODE) if Config.TMDB_ENABLED else None
     
-    def get_tmdb_id(self, title, year=None):
+    def get_tmdb_id(self, title, year=None, filename=None):
         """
         Get TMDB ID for a movie
         
         Args:
             title (str): Movie title
             year (str, optional): Release year
+            filename (str, optional): Original filename for interactive mode
             
         Returns:
-            int or None: TMDB ID if found, None otherwise
+            tuple: (tmdb_id, year) if found, (None, original_year) otherwise
         """
         if not self.tmdb_client or not Config.TMDB_ENABLED:
-            return None
+            return None, year
             
-        movie = self.tmdb_client.search_movie(title, year)
+        movie = self.tmdb_client.search_movie(title, year, filename)
         
         if movie:
             tmdb_id = movie.get('id')
-            # Get year from TMDB if not provided
-            if not year and 'release_date' in movie and movie['release_date']:
+            # Get year from TMDB if not provided or if we have more accurate info
+            if 'release_date' in movie and movie['release_date']:
                 year = movie['release_date'][:4]
                 
             Logger.info(f"Found TMDB match for '{title}': ID {tmdb_id}, Year: {year}")
@@ -53,6 +55,11 @@ class MovieProcessor(MediaProcessor):
     def process(self, file_path):
         """Process a movie file"""
         filename = os.path.basename(file_path)
+        
+        # Display processing header
+        action = "Testing (no changes)" if Config.TEST_MODE else "Moving and renaming"
+        InteractiveUI.display_processing_header(filename, "movie", action)
+        
         Logger.info(f"Processing movie: {filename}")
         
         # Clean movie name and get metadata
@@ -63,9 +70,14 @@ class MovieProcessor(MediaProcessor):
         tmdb_id_info = (None, year)
         if Config.TMDB_ENABLED:
             print(f"{Colors.BLUE}Searching TMDB for:{Colors.NC} {base_title}")
-            tmdb_id_info = self.get_tmdb_id(base_title, year)
+            tmdb_id_info = self.get_tmdb_id(base_title, year, filename)
         
-        tmdb_id, year = tmdb_id_info
+        # If user skipped in interactive mode, don't process the file
+        if tmdb_id_info is None and Config.INTERACTIVE_MODE:
+            print(f"{Colors.YELLOW}Skipped by user. File will not be processed.{Colors.NC}")
+            return False
+            
+        tmdb_id, year = tmdb_id_info if tmdb_id_info else (None, year)
         
         # Remove year from title if it exists
         if year and year in base_title:
@@ -101,5 +113,22 @@ class MovieProcessor(MediaProcessor):
         # Ensure films directory exists
         FileOps.ensure_dir(Config.FILMS)
         
+        # Display what we're going to do
+        destination = os.path.join(Config.FILMS, new_filename)
+        print(f"{Colors.GREEN}Movie identified:{Colors.NC} {base_title} ({year or 'Unknown Year'})")
+        if tmdb_id:
+            print(f"{Colors.GREEN}TMDB ID:{Colors.NC} {tmdb_id}")
+        print(f"{Colors.GREEN}New filename:{Colors.NC} {new_filename}")
+        
         # Move file
-        return FileOps.move_file(file_path, os.path.join(Config.FILMS, new_filename))
+        result = FileOps.move_file(file_path, destination)
+        
+        # Display result
+        InteractiveUI.display_result(
+            success=result,
+            message="Movie processed successfully" if result else "Failed to process movie",
+            original_path=file_path,
+            destination_path=destination
+        )
+        
+        return result
