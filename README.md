@@ -29,23 +29,23 @@ It's recommended to install JFMO in a virtual environment to avoid conflicts wit
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/jfmo.git
-cd jfmo
+git clone https://github.com/StafLoker/jellyfin-format-media-organizer.git
+cd jellyfin-format-media-organizer
 
 # Create a virtual environment
-python -m venv venv
+python3 -m venv .venv
 
 # Activate the virtual environment
 # On Linux/macOS:
-source venv/bin/activate
+source .venv/bin/activate
 # On Windows:
-venv\Scripts\activate
+.venv\Scripts\activate
 
 # Install dependencies
-pip install transliterate
+pip3 install transliterate
 
 # Install JFMO in development mode
-pip install -e .
+pip3 install -e .
 ```
 
 To deactivate the virtual environment when you're done:
@@ -58,9 +58,9 @@ deactivate
 If you prefer to install JFMO globally:
 
 ```bash
-git clone https://github.com/yourusername/jfmo.git
-cd jfmo
-pip install .
+git clone https://github.com/StafLoker/jellyfin-format-media-organizer.git
+cd jellyfin-format-media-organizer
+pip3 install .
 ```
 
 ## Usage
