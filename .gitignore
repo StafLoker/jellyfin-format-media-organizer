@@ -4,6 +4,7 @@
 
 .venv
 test_environment
+*.pyc
 
 #########
 # MacOS #

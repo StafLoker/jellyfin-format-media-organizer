@@ -185,13 +185,13 @@ To test JFMO with this environment:
 
 \`\`\`bash
 # Run in test mode (no actual changes)
-python -m jfmo --config $(pwd)/$CONFIG_FILE --test
+python3 -m jfmo --config $(pwd)/$CONFIG_FILE --test
 
 # Run with interactive mode (recommended for testing problematic patterns)
-python -m jfmo --config $(pwd)/$CONFIG_FILE
+python3 -m jfmo --config $(pwd)/$CONFIG_FILE
 
 # Run without interactive mode
-python -m jfmo --config $(pwd)/$CONFIG_FILE --non-interactive
+python3 -m jfmo --config $(pwd)/$CONFIG_FILE --non-interactive
 \`\`\`
 
 ## Expected Behavior
