@@ -73,6 +73,12 @@ When you're satisfied with the proposed changes, run the main script:
 ./jfmo.sh
 ```
 
+If permission deny, use:
+
+```bash
+sudo bash -c './jfmo.sh'
+```
+
 By default, this will copy your files to their new locations (originals remain untouched).
 
 ## Configuration
