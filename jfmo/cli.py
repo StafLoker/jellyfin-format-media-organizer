@@ -41,6 +41,13 @@ def parse_args():
     file_group.add_argument("--group", help="Media files group", default=Config.MEDIA_GROUP)
     file_group.add_argument("--log", help="Log file path", default=Config.LOG_FILE)
     
+    # TMDB options
+    tmdb_group = parser.add_argument_group("TMDB Integration Options")
+    tmdb_group.add_argument("--tmdb-api-key", help="TMDB API key (or set TMDB_API_KEY environment variable)",
+                          default=Config.TMDB_API_KEY)
+    tmdb_group.add_argument("--disable-tmdb", action="store_true",
+                          help="Disable TMDB integration")
+    
     return parser.parse_args()
 
 
@@ -60,3 +67,11 @@ def check_dependencies():
         print(f"{Colors.RED}Error: Required package 'transliterate' not found.{Colors.NC}")
         print(f"{Colors.YELLOW}Please install it using: pip install transliterate{Colors.NC}")
         sys.exit(1)
+        
+    if Config.TMDB_ENABLED:
+        try:
+            import requests
+        except ImportError:
+            print(f"{Colors.RED}Error: Required package 'requests' not found.{Colors.NC}")
+            print(f"{Colors.YELLOW}Please install it using: pip install requests{Colors.NC}")
+            sys.exit(1)

@@ -15,7 +15,7 @@ setup(
     version=version,
     author="Your Name",
     author_email="your.email@example.com",
-    description="Jellyfin Format Media Organizer",
+    description="Jellyfin Format Media Organizer with TMDB integration",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/yourusername/jellyfin-format-media-organizer",
@@ -30,6 +30,7 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "transliterate>=1.10.0",
+        "requests>=2.25.0",
     ],
     entry_points={
         "console_scripts": [

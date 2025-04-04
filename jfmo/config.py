@@ -33,6 +33,10 @@ class Config:
     # Video file extensions
     VIDEO_EXTENSIONS = ('.mkv', '.mp4', '.avi', '.m4v', '.mov', '.wmv', '.flv')
     
+    # TMDB configuration
+    TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
+    TMDB_ENABLED = True
+    
     @classmethod
     def update_from_args(cls, args):
         """Update configuration from command line arguments"""
@@ -66,3 +70,9 @@ class Config:
             cls.MEDIA_GROUP = args.group
         if args.log:
             cls.LOG_FILE = args.log
+            
+        # Update TMDB settings
+        if args.tmdb_api_key:
+            cls.TMDB_API_KEY = args.tmdb_api_key
+        if args.disable_tmdb:
+            cls.TMDB_ENABLED = False

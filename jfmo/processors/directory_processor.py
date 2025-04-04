@@ -10,6 +10,7 @@ import re
 from ..config import Config
 from ..utils import FileOps, Colors, Logger, Transliterator
 from ..detectors import SeasonEpisodeDetector, YearDetector, QualityDetector
+from ..metadata import TMDBClient
 from .series_processor import SeriesProcessor
 
 
@@ -19,6 +20,8 @@ class DirectoryProcessor:
     def __init__(self):
         """Initialize the processor"""
         self.series_processor = SeriesProcessor()
+        # Use the same TMDB client as the series processor
+        self.tmdb_client = self.series_processor.tmdb_client
     
     def is_special_case(self, dir_name):
         """Check if directory is a special case (like "La Casa de Papel 3")"""
@@ -36,6 +39,14 @@ class DirectoryProcessor:
         series_name = match.group(1)
         season_num = match.group(2)
         
+        # Try to get TMDB ID
+        tmdb_id_info = (None, None)
+        if Config.TMDB_ENABLED:
+            print(f"{Colors.BLUE}Searching TMDB for series:{Colors.NC} {series_name}")
+            tmdb_id_info = self.series_processor.get_tmdb_id(series_name)
+        
+        tmdb_id, year = tmdb_id_info
+        
         # Format season
         season_num = f"{int(season_num):02d}"
         
@@ -47,8 +58,20 @@ class DirectoryProcessor:
             quality = f"[{quality_match.group(1)}]"
             quality_suffix = f" - {quality}"
         
+        # Create series name with TMDB ID if available
+        if tmdb_id:
+            if year:
+                series_dir_name = f"{series_name} ({year}) [tmdbid-{tmdb_id}]"
+            else:
+                series_dir_name = f"{series_name} [tmdbid-{tmdb_id}]"
+        else:
+            if year:
+                series_dir_name = f"{series_name} ({year})"
+            else:
+                series_dir_name = series_name
+        
         # Create structure
-        series_dir = os.path.join(Config.SERIES, series_name)
+        series_dir = os.path.join(Config.SERIES, series_dir_name)
         season_dir = os.path.join(series_dir, f"Season {season_num}")
         
         print(f"{Colors.BLUE}Special series detected:{Colors.NC} {dir_name}")
@@ -95,20 +118,37 @@ class DirectoryProcessor:
         # Try to transliterate
         clean_series = Transliterator.transliterate_text(clean_series)
         
+        # Try to get TMDB ID
+        tmdb_id_info = (None, year)
+        if Config.TMDB_ENABLED:
+            print(f"{Colors.BLUE}Searching TMDB for series:{Colors.NC} {clean_series}")
+            tmdb_id_info = self.series_processor.get_tmdb_id(clean_series, year)
+        
+        tmdb_id, year = tmdb_id_info
+        
         # Special check for series named with year-like numbers (like "1923")
         if clean_series == year:
             # If series name is the same as detected year, don't use the year suffix
             year = ""
         
-        # Add year if it exists
-        year_suffix = ""
-        if year:
-            year_suffix = f" ({year})"
-            # Remove year from name if included
-            clean_series = clean_series.replace(f" {year}", "")
+        # Remove year from name if included
+        if year and year in clean_series:
+            clean_series = re.sub(r'\s+' + re.escape(year), '', clean_series).strip()
+        
+        # Create series name with TMDB ID if available
+        if tmdb_id:
+            if year:
+                series_dir_name = f"{clean_series} ({year}) [tmdbid-{tmdb_id}]"
+            else:
+                series_dir_name = f"{clean_series} [tmdbid-{tmdb_id}]"
+        else:
+            if year:
+                series_dir_name = f"{clean_series} ({year})"
+            else:
+                series_dir_name = clean_series
         
         # Create series directory
-        series_dir = os.path.join(Config.SERIES, f"{clean_series}{year_suffix}")
+        series_dir = os.path.join(Config.SERIES, series_dir_name)
         
         print(f"{Colors.BLUE}Processing series directory:{Colors.NC} {dir_name}")
         
