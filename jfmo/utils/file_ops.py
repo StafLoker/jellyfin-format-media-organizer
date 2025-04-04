@@ -8,9 +8,11 @@ File operations module for JFMO
 import os
 import shutil
 import subprocess
+import re
 from ..config import Config
 from .colors import Colors
 from .logger import Logger
+from .output_formatter import OutputFormatter
 
 
 class FileOps:
@@ -19,8 +21,6 @@ class FileOps:
     @staticmethod
     def clean_name(name):
         """Clean name by removing special characters and prefixes"""
-        import re
-        
         # Remove extension if present
         name = os.path.splitext(name)[0]
         
@@ -47,7 +47,7 @@ class FileOps:
     def set_permissions(path, is_dir=False):
         """Set correct permissions and ownership"""
         if Config.TEST_MODE:
-            return
+            return True
         
         try:
             # Set ownership
@@ -59,9 +59,11 @@ class FileOps:
                     subprocess.run(['chmod', '775', path], check=True)  # rwxrwxr-x
                 else:
                     subprocess.run(['chmod', '664', path], check=True)  # rw-rw-r--
+            return True
         except subprocess.SubprocessError as e:
-            print(Colors.red(f"Error setting permissions: {str(e)}"))
+            OutputFormatter.print_file_processing_info("Error", f"Setting permissions failed: {str(e)}")
             Logger.error(f"Error setting permissions for {path}: {str(e)}")
+            return False
     
     @staticmethod
     def ensure_dir(directory):
@@ -72,6 +74,7 @@ class FileOps:
                 FileOps.set_permissions(directory, is_dir=True)
                 return True
             except Exception as e:
+                OutputFormatter.print_file_processing_info("Error", f"Creating directory failed: {str(e)}")
                 Logger.error(f"Failed to create directory {directory}: {str(e)}")
                 return False
         return True
@@ -84,24 +87,25 @@ class FileOps:
         if not FileOps.ensure_dir(dest_dir):
             return False
         
-        print(f"{Colors.BLUE}{'Would move' if Config.TEST_MODE else 'Moving'}:{Colors.NC} {source_file} -> {dest_file}")
-        
-        # Move the file
-        if not Config.TEST_MODE:
-            try:
-                shutil.move(source_file, dest_file)
-                FileOps.set_permissions(dest_file)
-                print(f"{Colors.GREEN}✓ Success{Colors.NC}")
-                Logger.info(f"MOVING: {source_file} -> {dest_file} (success)")
-                return True
-            except Exception as e:
-                print(f"{Colors.RED}✗ Error: {str(e)}{Colors.NC}")
-                Logger.error(f"ERROR MOVING: {source_file} -> {dest_file} ({str(e)})")
-                return False
-        else:
-            print(f"{Colors.YELLOW}(Test mode - no changes made){Colors.NC}")
-            Logger.info(f"TEST - Would move: {source_file} -> {dest_file}")
+        # Handle test mode
+        if Config.TEST_MODE:
+            action_msg = f"Would move: {source_file} -> {dest_file}"
+            OutputFormatter.print_file_processing_info("Test Mode", "No changes made")
+            Logger.info(f"TEST - {action_msg}")
             return True
+        
+        # Actual file move in live mode
+        try:
+            shutil.move(source_file, dest_file)
+            FileOps.set_permissions(dest_file)
+            action_msg = f"Moved: {source_file} -> {dest_file}"
+            Logger.info(f"MOVING: {source_file} -> {dest_file} (success)")
+            return True
+        except Exception as e:
+            error_msg = f"Error moving file: {str(e)}"
+            OutputFormatter.print_file_processing_info("Error", error_msg)
+            Logger.error(f"ERROR MOVING: {source_file} -> {dest_file} ({str(e)})")
+            return False
     
     @staticmethod
     def remove_empty_dir(directory):
@@ -109,12 +113,15 @@ class FileOps:
         if not Config.TEST_MODE and os.path.exists(directory) and not os.listdir(directory):
             try:
                 os.rmdir(directory)
-                print(f"{Colors.YELLOW}Removed empty directory:{Colors.NC} {directory}")
                 Logger.info(f"REMOVED EMPTY DIRECTORY: {directory}")
                 return True
             except Exception as e:
+                OutputFormatter.print_file_processing_info("Error", f"Failed to remove directory: {str(e)}")
                 Logger.error(f"Failed to remove directory {directory}: {str(e)}")
                 return False
+        elif Config.TEST_MODE and os.path.exists(directory) and not os.listdir(directory):
+            Logger.info(f"TEST - Would remove empty directory: {directory}")
+            return True
         return False
     
     @staticmethod

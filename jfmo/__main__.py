@@ -7,39 +7,93 @@ Main module for JFMO
 
 import os
 import sys
+from collections import defaultdict
+
 from .config import Config
 from .utils import Colors, Logger, FileOps
+from .utils.output_formatter import OutputFormatter
 from .detectors import SeasonEpisodeDetector
 from .processors import MovieProcessor, SeriesProcessor, DirectoryProcessor
 from .cli import parse_args, check_root, check_dependencies, handle_config_options, update_config_from_args
 
 
-def print_header():
-    """Print JFMO header information"""
-    print(f"{Colors.GREEN}🎬 JELLYFIN FORMAT MEDIA ORGANIZER{Colors.NC}")
-    print(f"{Colors.GREEN}Version: {Config.VERSION}{Colors.NC}")
-    print("")
+def process_files():
+    """Process individual media files"""
+    Logger.info("Starting processing of individual files")
+    OutputFormatter.print_section_header("PROCESSING INDIVIDUAL FILES")
     
-    if Config.TEST_MODE:
-        print(f"{Colors.YELLOW}MODE: TEST{Colors.NC} - No actual file operations will be performed")
-    else:
-        print(f"{Colors.YELLOW}MODE: MOVE{Colors.NC} - Files will be moved to their destinations and empty directories will be removed")
+    movie_processor = MovieProcessor()
+    series_processor = SeriesProcessor()
     
-    print("")
-    print(f"{Colors.BLUE}📂 Downloads directory:{Colors.NC} {Config.DOWNLOADS}")
-    print(f"{Colors.BLUE}🎥 Movies directory:{Colors.NC} {Config.FILMS}")
-    print(f"{Colors.BLUE}📺 TV Shows directory:{Colors.NC} {Config.SERIES}")
-    print(f"{Colors.BLUE}👤 Media ownership:{Colors.NC} {Config.MEDIA_USER}:{Config.MEDIA_GROUP}")
-    print(f"{Colors.BLUE}🔤 Automatic transliteration:{Colors.NC} Enabled")
+    stats = defaultdict(int)
     
-    if Config.TMDB_ENABLED:
-        api_status = "Configured ✓" if Config.TMDB_API_KEY else "Not configured ✗"
-        print(f"{Colors.BLUE}🎬 TMDB Integration:{Colors.NC} Enabled ({api_status})")
-    else:
-        print(f"{Colors.BLUE}🎬 TMDB Integration:{Colors.NC} Disabled")
-        
-    print(f"{Colors.BLUE}📄 Log file:{Colors.NC} {Config.LOG_FILE}")
-    print("")
+    # Process individual files (look for series first)
+    for filename in os.listdir(Config.DOWNLOADS):
+        file_path = os.path.join(Config.DOWNLOADS, filename)
+        if os.path.isfile(file_path) and FileOps.is_video_file(filename):
+            stats['total'] += 1
+            
+            OutputFormatter.print_file_processing_header(filename)
+            
+            # Check if it's a series episode (SxxExx pattern)
+            season_episode = SeasonEpisodeDetector.detect(filename)
+            if season_episode:
+                OutputFormatter.print_file_processing_info("Detected", "TV Series")
+                OutputFormatter.print_file_processing_info("Season/Episode", f"S{int(season_episode[0]):02d}E{int(season_episode[1]):02d}")
+                
+                result = series_processor.process(file_path)
+                if result:
+                    stats['success'] += 1
+                else:
+                    stats['error'] += 1
+            else:
+                OutputFormatter.print_file_processing_info("Detected", "Movie")
+                
+                result = movie_processor.process(file_path)
+                if result:
+                    stats['success'] += 1
+                else:
+                    stats['error'] += 1
+    
+    return stats
+
+
+def process_directories():
+    """Process directories potentially containing series"""
+    Logger.info("Starting directory processing")
+    OutputFormatter.print_section_header("PROCESSING SERIES DIRECTORIES")
+    
+    directory_processor = DirectoryProcessor()
+    
+    stats = defaultdict(int)
+    
+    # Process directories (series)
+    for dirname in os.listdir(Config.DOWNLOADS):
+        dir_path = os.path.join(Config.DOWNLOADS, dirname)
+        if os.path.isdir(dir_path) and dirname != "incomplete":
+            stats['total'] += 1
+            
+            # Check if it's a special case directory
+            if directory_processor.is_special_case(dirname):
+                action = "Testing (no changes)" if Config.TEST_MODE else "Moving and renaming"
+                OutputFormatter.print_directory_header(dirname, "TV show directory (special case)", action)
+                
+                result = directory_processor.process_special_case(dir_path)
+                if result:
+                    stats['success'] += 1
+                else:
+                    stats['error'] += 1
+            else:
+                action = "Testing (no changes)" if Config.TEST_MODE else "Moving and renaming"
+                OutputFormatter.print_directory_header(dirname, "TV show directory", action)
+                
+                result = directory_processor.process_directory(dir_path)
+                if result:
+                    stats['success'] += 1
+                else:
+                    stats['error'] += 1
+    
+    return stats
 
 
 def check_directories():
@@ -53,42 +107,6 @@ def check_directories():
     # Make sure series and films directories exist with proper permissions
     FileOps.ensure_dir(Config.SERIES)
     FileOps.ensure_dir(Config.FILMS)
-
-
-def process_files():
-    """Process individual media files"""
-    Logger.info("Starting processing of individual files")
-    print(f"{Colors.GREEN}=== PROCESSING INDIVIDUAL FILES ==={Colors.NC}")
-    print("")
-    
-    movie_processor = MovieProcessor()
-    series_processor = SeriesProcessor()
-    
-    # Process individual files (look for series first)
-    for filename in os.listdir(Config.DOWNLOADS):
-        file_path = os.path.join(Config.DOWNLOADS, filename)
-        if os.path.isfile(file_path) and FileOps.is_video_file(filename):
-            # Check if it's a series episode (SxxExx pattern)
-            if SeasonEpisodeDetector.detect(filename):
-                series_processor.process(file_path)
-            else:
-                # If not a series, treat as movie
-                movie_processor.process(file_path)
-
-
-def process_directories():
-    """Process directories potentially containing series"""
-    Logger.info("Starting directory processing")
-    print(f"{Colors.GREEN}=== PROCESSING SERIES DIRECTORIES ==={Colors.NC}")
-    print("")
-    
-    directory_processor = DirectoryProcessor()
-    
-    # Process directories (series)
-    for dirname in os.listdir(Config.DOWNLOADS):
-        dir_path = os.path.join(Config.DOWNLOADS, dirname)
-        if os.path.isdir(dir_path) and dirname != "incomplete":
-            directory_processor.process_directory(dir_path)
 
 
 def main():
@@ -109,21 +127,26 @@ def main():
     check_dependencies()
     
     # Print header
-    print_header()
+    OutputFormatter.print_header()
     
     # Check directories
     check_directories()
     
+    # Initialize stats
+    all_stats = defaultdict(int)
+    
     # Process files
-    process_files()
+    file_stats = process_files()
+    for key, value in file_stats.items():
+        all_stats[key] += value
     
     # Process directories
-    process_directories()
+    dir_stats = process_directories()
+    for key, value in dir_stats.items():
+        all_stats[key] += value
     
-    # Final message
-    print("")
-    print(f"{Colors.GREEN}✅ PROCESS COMPLETED{Colors.NC}")
-    print(f"{Colors.BLUE}A detailed log has been saved at: {Config.LOG_FILE}{Colors.NC}")
+    # Print summary
+    OutputFormatter.print_summary(all_stats)
     
     return 0
 

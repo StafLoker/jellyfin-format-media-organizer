@@ -9,6 +9,7 @@ import os
 import re
 from ..config import Config
 from ..utils import FileOps, Colors, Logger, Transliterator
+from ..utils.output_formatter import OutputFormatter
 from ..utils.interactive_ui import InteractiveUI
 from ..detectors import SeasonEpisodeDetector, YearDetector, QualityDetector
 from ..metadata import TMDBClient
@@ -32,14 +33,14 @@ class DirectoryProcessor:
         """Process a special case directory"""
         dir_name = os.path.basename(dir_path)
         
-        # Display processing header
-        action = "Testing (no changes)" if Config.TEST_MODE else "Moving and renaming"
-        InteractiveUI.display_processing_header(dir_name, "TV show directory (special case)", action)
-        
         Logger.info(f"Processing special directory: {dir_name}")
         
         match = re.search(r'(La Casa de Papel) ([0-9])', dir_name)
         if not match:
+            OutputFormatter.print_file_processing_result(
+                success=False,
+                message="Failed to process special case directory - pattern not recognized"
+            )
             return False
             
         series_name = match.group(1)
@@ -48,12 +49,15 @@ class DirectoryProcessor:
         # Try to get TMDB ID
         tmdb_id_info = (None, None)
         if Config.TMDB_ENABLED:
-            print(f"{Colors.BLUE}Searching TMDB for series:{Colors.NC} {series_name}")
+            OutputFormatter.print_file_processing_info("TMDB Search", series_name)
             tmdb_id_info = self.series_processor.get_tmdb_id(series_name, None, dir_name)
         
         # If user skipped in interactive mode, don't process the directory
         if tmdb_id_info is None and Config.INTERACTIVE_MODE:
-            print(f"{Colors.YELLOW}Skipped by user. Directory will not be processed.{Colors.NC}")
+            OutputFormatter.print_file_processing_result(
+                success=False,
+                message="Skipped by user. Directory will not be processed."
+            )
             return False
             
         tmdb_id, year = tmdb_id_info if tmdb_id_info else (None, None)
@@ -85,61 +89,78 @@ class DirectoryProcessor:
         series_dir = os.path.join(Config.SERIES, series_dir_name)
         season_dir = os.path.join(series_dir, f"Season {season_num}")
         
-        print(f"{Colors.BLUE}Special series detected:{Colors.NC} {dir_name}")
-        if tmdb_id:
-            print(f"{Colors.GREEN}TMDB ID:{Colors.NC} {tmdb_id}")
-        print(f"{Colors.GREEN}Will create:{Colors.NC} {season_dir}")
+        OutputFormatter.print_file_processing_info("Special Series", series_name)
+        OutputFormatter.print_file_processing_info("Season", season_num)
+        if quality:
+            OutputFormatter.print_file_processing_info("Quality", quality)
+        OutputFormatter.print_file_processing_info("Target Directory", season_dir)
         
         Logger.info(f"Special series detected: {dir_name}")
         
         # Find files in directory
         episodes_processed = 0
+        episodes_count = 0
+        
+        # First count episodes for progress information
+        for root, _, files in os.walk(dir_path):
+            for file in files:
+                if FileOps.is_video_file(file):
+                    episodes_count += 1
+        
+        # Process episodes
         for root, _, files in os.walk(dir_path):
             for file in files:
                 if FileOps.is_video_file(file):
                     episode_path = os.path.join(root, file)
                     filename = os.path.basename(episode_path)
+                    
+                    OutputFormatter.print_file_processing_header(filename)
+                    
                     episode_num = "01"  # Assume episode 1 by default
                     
                     # Try to extract episode number if it exists in the name
                     ep_match = re.search(r'E([0-9]{2})', filename) or re.search(r'([0-9]{2})\.mkv', filename)
                     if ep_match:
                         episode_num = ep_match.group(1)
+                        OutputFormatter.print_file_processing_info("Episode", episode_num)
                     
                     # Format final name
                     extension = os.path.splitext(filename)[1]
                     new_filename = f"{series_name} S{season_num}E{episode_num}{quality_suffix}{extension}"
                     destination = os.path.join(season_dir, new_filename)
                     
-                    # Display what we're going to do
-                    print(f"{Colors.GREEN}Episode found:{Colors.NC} {filename}")
-                    print(f"{Colors.GREEN}New name:{Colors.NC} {new_filename}")
+                    OutputFormatter.print_file_processing_info("New Filename", new_filename)
                     
                     # Move file
                     result = FileOps.move_file(episode_path, destination)
                     episodes_processed += 1 if result else 0
                     
                     # Display result
-                    InteractiveUI.display_result(
+                    OutputFormatter.print_file_processing_result(
                         success=result,
                         message="Episode processed successfully" if result else "Failed to process episode",
-                        original_path=episode_path,
-                        destination_path=destination
+                        details={
+                            "From": episode_path,
+                            "To": destination
+                        }
                     )
         
         # After moving all files, remove empty directory if needed
         if episodes_processed > 0:
-            FileOps.remove_empty_dir(dir_path)
+            if FileOps.remove_empty_dir(dir_path):
+                OutputFormatter.print_file_processing_info("Directory", f"Removed empty directory: {dir_path}")
+            
+        # Summary for this directory
+        OutputFormatter.print_file_processing_result(
+            success=episodes_processed > 0,
+            message=f"Directory processed: {episodes_processed}/{episodes_count} episodes"
+        )
         
-        return True
+        return episodes_processed > 0
     
     def process_directory(self, dir_path):
         """Process a directory potentially containing TV series"""
         dir_name = os.path.basename(dir_path)
-        
-        # Display processing header
-        action = "Testing (no changes)" if Config.TEST_MODE else "Moving and renaming"
-        InteractiveUI.display_processing_header(dir_name, "TV show directory", action)
         
         Logger.info(f"Processing directory: {dir_name}")
         
@@ -152,17 +173,23 @@ class DirectoryProcessor:
         year = YearDetector.get_year(dir_name)
         
         # Try to transliterate
+        original_name = clean_series
         clean_series = Transliterator.transliterate_text(clean_series)
+        if original_name != clean_series:
+            OutputFormatter.print_file_processing_info("Transliteration", f"{original_name} → {clean_series}")
         
         # Try to get TMDB ID
         tmdb_id_info = (None, year)
         if Config.TMDB_ENABLED:
-            print(f"{Colors.BLUE}Searching TMDB for series:{Colors.NC} {clean_series}")
+            OutputFormatter.print_file_processing_info("TMDB Search", clean_series)
             tmdb_id_info = self.series_processor.get_tmdb_id(clean_series, year, dir_name)
         
         # If user skipped in interactive mode, don't process the directory
         if tmdb_id_info is None and Config.INTERACTIVE_MODE:
-            print(f"{Colors.YELLOW}Skipped by user. Directory will not be processed.{Colors.NC}")
+            OutputFormatter.print_file_processing_result(
+                success=False,
+                message="Skipped by user. Directory will not be processed."
+            )
             return False
             
         tmdb_id, year = tmdb_id_info if tmdb_id_info else (None, year)
@@ -191,18 +218,31 @@ class DirectoryProcessor:
         # Create series directory
         series_dir = os.path.join(Config.SERIES, series_dir_name)
         
-        print(f"{Colors.BLUE}Processing series directory:{Colors.NC} {dir_name}")
-        print(f"{Colors.GREEN}Series identified:{Colors.NC} {clean_series} {f'({year})' if year else ''}")
+        OutputFormatter.print_file_processing_info("Series", clean_series)
+        if year:
+            OutputFormatter.print_file_processing_info("Year", year)
         if tmdb_id:
-            print(f"{Colors.GREEN}TMDB ID:{Colors.NC} {tmdb_id}")
+            OutputFormatter.print_file_processing_info("TMDB ID", tmdb_id)
+        OutputFormatter.print_file_processing_info("Target Directory", series_dir)
         
         # Find all episode files in the directory
         episodes_processed = 0
+        episodes_count = 0
+        
+        # First count episodes for progress information
+        for root, _, files in os.walk(dir_path):
+            for file in files:
+                if FileOps.is_video_file(file):
+                    episodes_count += 1
+        
+        # Process episodes
         for root, _, files in os.walk(dir_path):
             for file in files:
                 if FileOps.is_video_file(file):
                     episode_path = os.path.join(root, file)
                     filename = os.path.basename(episode_path)
+                    
+                    OutputFormatter.print_file_processing_header(filename)
                     
                     # Detect season and episode with multiple patterns
                     season_episode = SeasonEpisodeDetector.detect(filename)
@@ -219,33 +259,47 @@ class DirectoryProcessor:
                         # Create season directory
                         season_dir = os.path.join(series_dir, f"Season {season_num}")
                         
+                        OutputFormatter.print_file_processing_info("Season/Episode", f"S{season_num}E{episode_num}")
+                        if quality:
+                            OutputFormatter.print_file_processing_info("Quality", quality)
+                        
                         # Format episode name
                         extension = os.path.splitext(filename)[1]
                         new_filename = f"{clean_series} S{season_num}E{episode_num}{quality_suffix}{extension}"
                         destination = os.path.join(season_dir, new_filename)
                         
-                        # Display what we're going to do
-                        print(f"{Colors.GREEN}Episode found:{Colors.NC} {filename}")
-                        print(f"{Colors.GREEN}Season/Episode:{Colors.NC} S{season_num}E{episode_num}")
-                        print(f"{Colors.GREEN}New name:{Colors.NC} {new_filename}")
+                        OutputFormatter.print_file_processing_info("New Filename", new_filename)
                         
                         # Move file
                         result = FileOps.move_file(episode_path, destination)
                         episodes_processed += 1 if result else 0
                         
                         # Display result
-                        InteractiveUI.display_result(
+                        OutputFormatter.print_file_processing_result(
                             success=result,
                             message="Episode processed successfully" if result else "Failed to process episode",
-                            original_path=episode_path,
-                            destination_path=destination
+                            details={
+                                "From": episode_path,
+                                "To": destination
+                            }
                         )
                     else:
-                        print(f"{Colors.RED}⚠️ Could not detect episode pattern for:{Colors.NC} {filename}")
-                        Logger.error(f"Could not detect episode pattern for: {filename}")
+                        error_message = f"Could not detect episode pattern for: {filename}"
+                        Logger.error(error_message)
+                        OutputFormatter.print_file_processing_result(
+                            success=False,
+                            message=error_message
+                        )
         
         # After moving all files, remove empty directory if needed
         if episodes_processed > 0:
-            FileOps.remove_empty_dir(dir_path)
+            if FileOps.remove_empty_dir(dir_path):
+                OutputFormatter.print_file_processing_info("Directory", f"Removed empty directory: {dir_path}")
         
-        return True
+        # Summary for this directory
+        OutputFormatter.print_file_processing_result(
+            success=episodes_processed > 0,
+            message=f"Directory processed: {episodes_processed}/{episodes_count} episodes"
+        )
+        
+        return episodes_processed > 0

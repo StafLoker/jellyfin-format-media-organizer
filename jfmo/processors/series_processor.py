@@ -9,6 +9,7 @@ import os
 import re
 from ..config import Config
 from ..utils import FileOps, Colors, Logger
+from ..utils.output_formatter import OutputFormatter
 from ..utils.interactive_ui import InteractiveUI
 from ..detectors import SeasonEpisodeDetector
 from ..metadata import TMDBClient
@@ -44,8 +45,12 @@ class SeriesProcessor(MediaProcessor):
         # Check cache first
         cache_key = f"{title}_{year if year else ''}"
         if cache_key in self.series_tmdb_cache:
-            return self.series_tmdb_cache[cache_key]
+            result = self.series_tmdb_cache[cache_key]
+            if result[0]:  # If we have a valid ID
+                OutputFormatter.print_file_processing_info("TMDB", f"Using cached ID: {result[0]}")
+            return result
             
+        OutputFormatter.print_file_processing_info("TMDB Search", title)
         tv_show = self.tmdb_client.search_tv(title, year, filename)
         
         # Check if user skipped
@@ -59,12 +64,14 @@ class SeriesProcessor(MediaProcessor):
                 year = tv_show['first_air_date'][:4]
                 
             Logger.info(f"Found TMDB match for series '{title}': ID {tmdb_id}, Year: {year}")
+            OutputFormatter.print_file_processing_info("TMDB Match", f"ID: {tmdb_id}, Year: {year}")
             
             # Store in cache
             self.series_tmdb_cache[cache_key] = (tmdb_id, year)
             return tmdb_id, year
             
         Logger.warning(f"No TMDB match found for series: {title} {year if year else ''}")
+        OutputFormatter.print_file_processing_info("TMDB", "No match found")
         
         # Store negative result in cache
         self.series_tmdb_cache[cache_key] = (None, year)
@@ -74,10 +81,6 @@ class SeriesProcessor(MediaProcessor):
         """Process a TV series file"""
         filename = os.path.basename(file_path)
         
-        # Display processing header
-        action = "Testing (no changes)" if Config.TEST_MODE else "Moving and renaming"
-        InteractiveUI.display_processing_header(filename, "TV show", action)
-        
         Logger.info(f"Processing TV show: {filename}")
         
         # Clean name and detect season/episode
@@ -85,8 +88,12 @@ class SeriesProcessor(MediaProcessor):
         season_episode = SeasonEpisodeDetector.detect(filename)
         
         if not season_episode:
-            print(f"{Colors.RED}⚠️ Could not detect series pattern for:{Colors.NC} {filename}")
-            Logger.error(f"Could not detect series pattern for: {filename}")
+            error_message = f"Could not detect series pattern for: {filename}"
+            Logger.error(error_message)
+            OutputFormatter.print_file_processing_result(
+                success=False,
+                message=error_message
+            )
             return False
         
         season_num, episode_num = season_episode
@@ -95,15 +102,24 @@ class SeriesProcessor(MediaProcessor):
         series_name = re.sub(r'S[0-9]{1,2}E[0-9]{1,2}.*$', '', clean_title).strip()
         year, quality = self.get_year_and_quality(filename)
         
+        OutputFormatter.print_file_processing_info("Series", series_name)
+        OutputFormatter.print_file_processing_info("Season/Episode", f"S{int(season_num):02d}E{episode_num}")
+        if year:
+            OutputFormatter.print_file_processing_info("Year", year)
+        if quality:
+            OutputFormatter.print_file_processing_info("Quality", quality)
+        
         # Try to get TMDB ID and possibly more accurate year
         tmdb_id_info = (None, year)
         if Config.TMDB_ENABLED:
-            print(f"{Colors.BLUE}Searching TMDB for series:{Colors.NC} {series_name}")
             tmdb_id_info = self.get_tmdb_id(series_name, year, filename)
         
         # If user skipped in interactive mode, don't process the file
         if tmdb_id_info is None and Config.INTERACTIVE_MODE:
-            print(f"{Colors.YELLOW}Skipped by user. File will not be processed.{Colors.NC}")
+            OutputFormatter.print_file_processing_result(
+                success=False,
+                message="Skipped by user. File will not be processed."
+            )
             return False
             
         tmdb_id, year = tmdb_id_info if tmdb_id_info else (None, year)
@@ -145,21 +161,21 @@ class SeriesProcessor(MediaProcessor):
         
         # Display what we're going to do
         destination = os.path.join(season_dir, new_filename)
-        print(f"{Colors.GREEN}Series identified:{Colors.NC} {series_name} {f'({year})' if year else ''}")
-        if tmdb_id:
-            print(f"{Colors.GREEN}TMDB ID:{Colors.NC} {tmdb_id}")
-        print(f"{Colors.GREEN}Season/Episode:{Colors.NC} S{season_num}E{episode_num}")
-        print(f"{Colors.GREEN}New location:{Colors.NC} {destination}")
+        OutputFormatter.print_file_processing_info("Series Directory", series_dir_name)
+        OutputFormatter.print_file_processing_info("New Filename", new_filename)
+        OutputFormatter.print_file_processing_info("Destination", destination)
         
         # Move file
         result = FileOps.move_file(file_path, destination)
         
         # Display result
-        InteractiveUI.display_result(
+        OutputFormatter.print_file_processing_result(
             success=result,
             message="TV episode processed successfully" if result else "Failed to process TV episode",
-            original_path=file_path,
-            destination_path=destination
+            details={
+                "From": file_path,
+                "To": destination
+            }
         )
         
         return result

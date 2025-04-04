@@ -8,7 +8,10 @@ Interactive UI module for JFMO
 import sys
 import os
 from typing import List, Dict, Any, Optional, Tuple
+
 from .colors import Colors
+from .output_formatter import OutputFormatter
+from ..config import Config
 
 
 class InteractiveUI:
@@ -53,14 +56,15 @@ class InteractiveUI:
         if len(options) == 1:
             return options[0]
             
-        # Print header with original information
-        print("\n" + "=" * 60)
+        # Print header
+        print("\n" + OutputFormatter.HORIZONTAL_DIVIDER)
         media_str = "Movie" if media_type == "movie" else "TV Show"
-        print(f"{Colors.BLUE}Multiple {media_str} matches found for:{Colors.NC}")
+        print(f"{Colors.GREEN}MULTIPLE {media_str.upper()} MATCHES FOUND{Colors.NC}")
+        
         if filename:
-            print(f"{Colors.YELLOW}Original file:{Colors.NC} {filename}")
-        print(f"{Colors.YELLOW}Search query:{Colors.NC} {title}")
-        print("=" * 60)
+            OutputFormatter.print_file_processing_info("Original File", filename, indentation=0)
+        OutputFormatter.print_file_processing_info("Search Query", title, indentation=0)
+        print(OutputFormatter.HORIZONTAL_DIVIDER)
         
         # Print available options
         for i, option in enumerate(options, 1):
@@ -86,10 +90,10 @@ class InteractiveUI:
                 print(f"    {Colors.BLUE}Overview:{Colors.NC} {overview}")
                 
         # Print navigation options
-        print("-" * 60)
+        print(OutputFormatter.SECTION_DIVIDER)
         print(f"{Colors.YELLOW}[s]{Colors.NC} Skip (leave file untouched)")
         print(f"{Colors.YELLOW}[q]{Colors.NC} Quit")
-        print("-" * 60)
+        print(OutputFormatter.SECTION_DIVIDER)
         
         # Get user selection
         while True:
@@ -124,43 +128,3 @@ class InteractiveUI:
             return default
             
         return choice.lower() in ('y', 'yes')
-    
-    @classmethod
-    def display_processing_header(cls, filename: str, media_type: str, action: str):
-        """
-        Display a consistent header when processing files
-        
-        Args:
-            filename (str): Name of the file being processed
-            media_type (str): Type of media (movie, tv show)
-            action (str): Action being performed (e.g., moving, testing)
-        """
-        print("\n" + "-" * 60)
-        print(f"{Colors.BLUE}Processing {media_type}:{Colors.NC} {filename}")
-        print(f"{Colors.YELLOW}Action:{Colors.NC} {action}")
-        
-    @classmethod
-    def display_result(cls, 
-                     success: bool, 
-                     message: str, 
-                     original_path: str = None, 
-                     destination_path: str = None):
-        """
-        Display the result of an operation
-        
-        Args:
-            success (bool): Whether the operation was successful
-            message (str): Message to display
-            original_path (str, optional): Original file path
-            destination_path (str, optional): Destination file path
-        """
-        if success:
-            status = f"{Colors.GREEN}✓ Success:{Colors.NC}"
-        else:
-            status = f"{Colors.RED}✗ Error:{Colors.NC}"
-            
-        print(f"{status} {message}")
-        
-        if original_path and destination_path:
-            print(f"  {Colors.YELLOW}From:{Colors.NC} {original_path}")
-            print(f"  {Colors.YELLOW}To:{Colors.NC} {destination_path}")

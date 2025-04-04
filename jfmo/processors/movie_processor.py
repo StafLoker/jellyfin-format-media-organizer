@@ -9,6 +9,7 @@ import os
 import re
 from ..config import Config
 from ..utils import FileOps, Colors, Logger
+from ..utils.output_formatter import OutputFormatter
 from ..utils.interactive_ui import InteractiveUI
 from ..metadata import TMDBClient
 from .media_processor import MediaProcessor
@@ -47,18 +48,16 @@ class MovieProcessor(MediaProcessor):
                 year = movie['release_date'][:4]
                 
             Logger.info(f"Found TMDB match for '{title}': ID {tmdb_id}, Year: {year}")
+            OutputFormatter.print_file_processing_info("TMDB Match", f"ID: {tmdb_id}, Year: {year}")
             return tmdb_id, year
             
         Logger.warning(f"No TMDB match found for movie: {title} {year if year else ''}")
+        OutputFormatter.print_file_processing_info("TMDB", "No match found")
         return None, year
     
     def process(self, file_path):
         """Process a movie file"""
         filename = os.path.basename(file_path)
-        
-        # Display processing header
-        action = "Testing (no changes)" if Config.TEST_MODE else "Moving and renaming"
-        InteractiveUI.display_processing_header(filename, "movie", action)
         
         Logger.info(f"Processing movie: {filename}")
         
@@ -66,15 +65,24 @@ class MovieProcessor(MediaProcessor):
         base_title = self.get_clean_title(filename)
         year, quality = self.get_year_and_quality(filename)
         
+        OutputFormatter.print_file_processing_info("Title", base_title)
+        if year:
+            OutputFormatter.print_file_processing_info("Year", year)
+        if quality:
+            OutputFormatter.print_file_processing_info("Quality", quality)
+        
         # Try to get TMDB ID and possibly more accurate year
         tmdb_id_info = (None, year)
         if Config.TMDB_ENABLED:
-            print(f"{Colors.BLUE}Searching TMDB for:{Colors.NC} {base_title}")
+            OutputFormatter.print_file_processing_info("TMDB Search", base_title)
             tmdb_id_info = self.get_tmdb_id(base_title, year, filename)
         
         # If user skipped in interactive mode, don't process the file
         if tmdb_id_info is None and Config.INTERACTIVE_MODE:
-            print(f"{Colors.YELLOW}Skipped by user. File will not be processed.{Colors.NC}")
+            OutputFormatter.print_file_processing_result(
+                success=False,
+                message="Skipped by user. File will not be processed."
+            )
             return False
             
         tmdb_id, year = tmdb_id_info if tmdb_id_info else (None, year)
@@ -115,20 +123,20 @@ class MovieProcessor(MediaProcessor):
         
         # Display what we're going to do
         destination = os.path.join(Config.FILMS, new_filename)
-        print(f"{Colors.GREEN}Movie identified:{Colors.NC} {base_title} ({year or 'Unknown Year'})")
-        if tmdb_id:
-            print(f"{Colors.GREEN}TMDB ID:{Colors.NC} {tmdb_id}")
-        print(f"{Colors.GREEN}New filename:{Colors.NC} {new_filename}")
+        OutputFormatter.print_file_processing_info("New Filename", new_filename)
+        OutputFormatter.print_file_processing_info("Destination", destination)
         
         # Move file
         result = FileOps.move_file(file_path, destination)
         
         # Display result
-        InteractiveUI.display_result(
+        OutputFormatter.print_file_processing_result(
             success=result,
             message="Movie processed successfully" if result else "Failed to process movie",
-            original_path=file_path,
-            destination_path=destination
+            details={
+                "From": file_path,
+                "To": destination
+            }
         )
         
         return result
