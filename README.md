@@ -1,4 +1,4 @@
-# Jellyfin Media Organizer
+# Jellyfin Format Media Organizer
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Bash](https://img.shields.io/badge/language-bash-green.svg)
@@ -42,15 +42,15 @@ Perfect for maintaining a clean, consistent, and Jellyfin-friendly media library
 1. Clone this repository or download the scripts:
 
 ```bash
-git clone https://github.com/yourusername/jellyfin-media-organizer.git
-cd jellyfin-media-organizer
+git clone https://github.com/StafLoker/jellyfin-format-media-organizer.git
+cd jellyfin-format-media-organizer
 ```
 
 2. Make the scripts executable:
 
 ```bash
-chmod +x media_format_jellyfin_test.sh
-chmod +x media_format_jellyfin_organizer.sh
+chmod +x jfmo_test.sh
+chmod +x jfmo.sh
 ```
 
 ## Usage
@@ -60,7 +60,7 @@ chmod +x media_format_jellyfin_organizer.sh
 Always start with a test run to see what changes will be made without actually modifying any files:
 
 ```bash
-./media_format_jellyfin_test.sh
+./jfmo_test.sh
 ```
 
 This will analyze your media files and show you a detailed report of how they would be organized.
@@ -70,7 +70,7 @@ This will analyze your media files and show you a detailed report of how they wo
 When you're satisfied with the proposed changes, run the main script:
 
 ```bash
-./media_format_jellyfin_organizer.sh
+./jfmo.sh
 ```
 
 By default, this will copy your files to their new locations (originals remain untouched).
