@@ -8,7 +8,7 @@ Series processor for JFMO
 import os
 import re
 from ..config import Config
-from ..utils import FileOps, Colors, Logger
+from ..utils import FileOps, Colors, Logger, Transliterator
 from ..utils.output_formatter import OutputFormatter
 from ..utils.interactive_ui import InteractiveUI
 from ..detectors import SeasonEpisodeDetector
