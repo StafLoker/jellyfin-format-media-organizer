@@ -11,6 +11,7 @@ import sys
 from . import __version__
 from .config import Config
 from .utils import Colors
+from .utils.config_file import ConfigFileHandler
 
 
 def parse_args():
@@ -28,27 +29,92 @@ def parse_args():
     parser.add_argument("--quiet", action="store_true",
                         help="Suppress log messages (except errors)")
     
+    # Configuration file options
+    config_group = parser.add_argument_group("Configuration File Options")
+    config_group.add_argument("--config", metavar="FILE",
+                             help="Path to configuration file")
+    config_group.add_argument("--generate-config", metavar="FILE",
+                             help="Generate a template configuration file")
+    
     # Directory options
     dir_group = parser.add_argument_group("Directory Options")
-    dir_group.add_argument("--media-dir", help="Base media directory", default=Config.MEDIA_DIR)
+    dir_group.add_argument("--media-dir", help="Base media directory", default=None)
     dir_group.add_argument("--downloads", help="Downloads directory", default=None)
     dir_group.add_argument("--films", help="Films directory", default=None)
     dir_group.add_argument("--series", help="TV Series directory", default=None)
     
     # File and permission options
     file_group = parser.add_argument_group("File and Permission Options")
-    file_group.add_argument("--user", help="Media files owner username", default=Config.MEDIA_USER)
-    file_group.add_argument("--group", help="Media files group", default=Config.MEDIA_GROUP)
-    file_group.add_argument("--log", help="Log file path", default=Config.LOG_FILE)
+    file_group.add_argument("--user", help="Media files owner username", default=None)
+    file_group.add_argument("--group", help="Media files group", default=None)
+    file_group.add_argument("--log", help="Log file path", default=None)
     
     # TMDB options
     tmdb_group = parser.add_argument_group("TMDB Integration Options")
     tmdb_group.add_argument("--tmdb-api-key", help="TMDB API key (or set TMDB_API_KEY environment variable)",
-                          default=Config.TMDB_API_KEY)
+                          default=None)
     tmdb_group.add_argument("--disable-tmdb", action="store_true",
                           help="Disable TMDB integration")
     
     return parser.parse_args()
+
+
+def handle_config_options(args):
+    """Handle configuration file options"""
+    # Check if we need to generate a template config
+    if args.generate_config:
+        if ConfigFileHandler.create_template(args.generate_config):
+            print(f"Run with: jfmo --config {args.generate_config}")
+            sys.exit(0)
+        else:
+            sys.exit(1)
+    
+    # Try to load config file - first from argument, then from default locations
+    config_path = args.config or ConfigFileHandler.get_default_config_path()
+    
+    if config_path:
+        ConfigFileHandler.update_config_from_file(config_path)
+
+
+def update_config_from_args(args):
+    """Update configuration from command line arguments (overriding any config file)"""
+    # Update Test Mode
+    Config.TEST_MODE = args.test
+    Config.VERBOSE = not args.quiet
+    
+    # Update paths if provided
+    if args.media_dir:
+        Config.MEDIA_DIR = args.media_dir
+        
+        # Only update derived paths if they weren't explicitly set
+        if not args.downloads and not Config.DOWNLOADS.startswith("/"):
+            Config.DOWNLOADS = os.path.join(Config.MEDIA_DIR, "downloads")
+        if not args.films and not Config.FILMS.startswith("/"):
+            Config.FILMS = os.path.join(Config.MEDIA_DIR, "films")
+        if not args.series and not Config.SERIES.startswith("/"):
+            Config.SERIES = os.path.join(Config.MEDIA_DIR, "series")
+    
+    # Update specific directories if provided
+    if args.downloads:
+        Config.DOWNLOADS = args.downloads
+    if args.films:
+        Config.FILMS = args.films
+    if args.series:
+        Config.SERIES = args.series
+        
+    # Update other settings
+    if args.user:
+        Config.MEDIA_USER = args.user
+    if args.group:
+        Config.MEDIA_GROUP = args.group
+    if args.log:
+        Config.LOG_FILE = args.log
+        
+    # Update TMDB settings
+    if args.tmdb_api_key:
+        Config.TMDB_API_KEY = args.tmdb_api_key
+    if args.disable_tmdb:
+        Config.TMDB_ENABLED = False
 
 
 def check_root():

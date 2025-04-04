@@ -17,6 +17,7 @@ JFMO is a powerful media organization tool designed to automatically structure a
 - **Metadata Extraction** - Extracts year, quality, season/episode information
 - **Directory Cleanup** - Removes empty directories after moving files
 - **Test Mode** - Preview changes without modifying files
+- **Configuration File** - Save your settings in a config file
 
 ## Installation
 
@@ -27,9 +28,31 @@ JFMO is a powerful media organization tool designed to automatically structure a
 - `requests` package (for TMDB integration)
 - TMDB API key (optional, but recommended)
 
-### Setting up a Virtual Environment
+### Recommended: Install with pipx
 
-It's recommended to install JFMO in a virtual environment to avoid conflicts with other Python packages:
+The easiest way to install and use JFMO is with [pipx](https://pypa.github.io/pipx/), which installs Python applications in isolated environments:
+
+```bash
+# Install pipx if you don't have it already
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+
+# Install JFMO
+pipx install git+https://github.com/StafLoker/jellyfin-format-media-organizer.git
+
+# Now you can run JFMO from anywhere
+jfmo --help
+```
+
+To update JFMO when new versions are available:
+
+```bash
+pipx upgrade jfmo
+```
+
+### Alternative: Setting up a Virtual Environment
+
+If you prefer a virtual environment or are developing JFMO:
 
 ```bash
 # Clone the repository
@@ -57,7 +80,7 @@ To deactivate the virtual environment when you're done:
 deactivate
 ```
 
-### Installing Globally
+### Alternative: Installing Globally
 
 If you prefer to install JFMO globally:
 
@@ -66,6 +89,75 @@ git clone https://github.com/StafLoker/jellyfin-format-media-organizer.git
 cd jellyfin-format-media-organizer
 pip install .
 ```
+
+## Using JFMO with Root Permissions
+
+Since JFMO needs to set proper file permissions, you'll need to run it with sudo when making actual changes. When installed with pipx, you can do this in two ways:
+
+```bash
+# Option 1: Use the full path to the pipx-installed executable
+sudo $(which jfmo) --config ~/.config/jfmo/config.json
+
+# Option 2: Use sudo with the Python module 
+sudo -E $(pipx environment -v | grep PIPX_SHARED_LIBS | awk -F'"' '{print $2}')/bin/python -m jfmo --config ~/.config/jfmo/config.json
+```
+
+The `-E` flag preserves environment variables including your TMDB API key if set.
+
+## Configuration
+
+JFMO can be configured via command line arguments or through a configuration file.
+
+### Configuration File
+
+Using a configuration file is the recommended way to use JFMO, as it allows you to save your settings and avoid typing long command lines.
+
+#### Generate a Template
+
+First, generate a configuration template:
+
+```bash
+jfmo --generate-config ~/.config/jfmo/config.json
+```
+
+Edit the generated file to match your environment:
+
+```json
+{
+    "directories": {
+        "media_dir": "/data/media",
+        "downloads": "/data/media/downloads",
+        "films": "/data/media/films",
+        "series": "/data/media/series"
+    },
+    "permissions": {
+        "user": "jellyfin",
+        "group": "media"
+    },
+    "tmdb": {
+        "api_key": "your_tmdb_api_key_here",
+        "enabled": true
+    },
+    "logging": {
+        "log_file": "/tmp/jfmo.log",
+        "verbose": true
+    }
+}
+```
+
+#### Using the Configuration File
+
+Once you have a configuration file, you can run JFMO with:
+
+```bash
+jfmo --config ~/.config/jfmo/config.json
+```
+
+JFMO will automatically look for configuration files in these locations (in order):
+1. Custom path specified with `--config`
+2. `~/.config/jfmo/config.json`
+3. `/etc/jfmo/config.json`
+4. `./config.json`
 
 ## TMDB Integration
 
@@ -77,6 +169,7 @@ JFMO can integrate with The Movie Database (TMDB) to add TMDB IDs to your media 
 2. Provide your API key in one of these ways:
    - Set the `TMDB_API_KEY` environment variable
    - Use the `--tmdb-api-key` command line option
+   - Add it to your configuration file in the "tmdb" section
 
 ### How TMDB Integration Works
 
@@ -94,21 +187,18 @@ When processing media files, JFMO will:
 Run in test mode first to see what changes would be made without modifying files:
 
 ```bash
-# If installed in a virtual environment:
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-jfmo --test
+# With a configuration file:
+jfmo --config ~/.config/jfmo/config.json --test
 
-# Or if running directly from the repository:
-python -m jfmo --test
+# Or with default configuration locations:
+jfmo --test
 ```
 
 When you're ready to make actual changes:
 
 ```bash
-# Using sudo requires global installation or specifying the full path to the venv Python
-sudo jfmo
-# Or with TMDB API key:
-sudo jfmo --tmdb-api-key YOUR_API_KEY
+# Using sudo with explicit config path
+sudo $(which jfmo) --config ~/.config/jfmo/config.json
 ```
 
 Root permissions are required to set proper file ownership.
@@ -124,21 +214,59 @@ Options:
   --quiet                 Suppress log messages
   -h, --help              Show this help message
 
+Configuration File Options:
+  --config FILE           Path to configuration file
+  --generate-config FILE  Generate a template configuration file
+
 Directory Options:
-  --media-dir DIRECTORY   Base media directory (default: /data/media)
+  --media-dir DIRECTORY   Base media directory
   --downloads DIRECTORY   Downloads directory
   --films DIRECTORY       Films directory
-  --series DIRECTORY      TV series directory
+  --series DIRECTORY      TV Series directory
 
 File and Permission Options:
-  --user USERNAME         Media files owner (default: jellyfin)
-  --group GROUPNAME       Media files group (default: media)
+  --user USERNAME         Media files owner
+  --group GROUPNAME       Media files group
   --log FILEPATH          Log file path
 
 TMDB Integration Options:
   --tmdb-api-key KEY      TMDB API key
   --disable-tmdb          Disable TMDB integration
 ```
+
+## Development and Testing
+
+JFMO includes a development script to set up a test environment for easy testing and development.
+
+### Setting up a Test Environment
+
+```bash
+# Make the script executable
+chmod +x dev/setup_test_env.sh
+
+# Run the script to create a test environment
+./dev/setup_test_env.sh
+```
+
+This will create a `test_environment` directory with:
+- Sample movie files
+- Sample TV show files and directories
+- Test configuration with your current user permissions
+- Directory structure for testing
+
+### Using the Test Environment
+
+The test script will output commands to run JFMO with the test environment:
+
+```bash
+# Run in test mode (no actual changes)
+python -m jfmo --config ./test_environment/config/jfmo_test_config.json --test
+
+# Run with actual changes
+python -m jfmo --config ./test_environment/config/jfmo_test_config.json
+```
+
+Since the test environment uses your current user, you don't need to use `sudo` for testing.
 
 ## Examples
 
@@ -220,8 +348,9 @@ jfmo/
 - **Files not detected**: Check if your file naming patterns match JFMO's detection patterns
 - **Transliteration issues**: Ensure the `transliterate` package is installed correctly
 - **TMDB integration issues**: Verify your API key and internet connection
-- **Check logs**: Examine `/tmp/jfmo.log` for detailed operation logs
-- **Virtual environment issues**: If using sudo with a venv, make sure to use the full path to the Python interpreter in the venv
+- **Check logs**: Examine the log file for detailed operation logs
+- **Configuration file issues**: Make sure your JSON file is valid
+- **pipx issues**: Try reinstalling with `pipx uninstall jfmo` followed by `pipx install jfmo`
 
 ## License
 

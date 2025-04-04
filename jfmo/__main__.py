@@ -11,7 +11,7 @@ from .config import Config
 from .utils import Colors, Logger, FileOps
 from .detectors import SeasonEpisodeDetector
 from .processors import MovieProcessor, SeriesProcessor, DirectoryProcessor
-from .cli import parse_args, check_root, check_dependencies
+from .cli import parse_args, check_root, check_dependencies, handle_config_options, update_config_from_args
 
 
 def print_header():
@@ -29,6 +29,13 @@ def print_header():
     print(f"{Colors.BLUE}📺 TV Shows directory:{Colors.NC} {Config.SERIES}")
     print(f"{Colors.BLUE}👤 Media ownership:{Colors.NC} {Config.MEDIA_USER}:{Config.MEDIA_GROUP}")
     print(f"{Colors.BLUE}🔤 Automatic transliteration:{Colors.NC} Enabled")
+    
+    if Config.TMDB_ENABLED:
+        api_status = "Configured ✓" if Config.TMDB_API_KEY else "Not configured ✗"
+        print(f"{Colors.BLUE}🎬 TMDB Integration:{Colors.NC} Enabled ({api_status})")
+    else:
+        print(f"{Colors.BLUE}🎬 TMDB Integration:{Colors.NC} Disabled")
+        
     print(f"{Colors.BLUE}📄 Log file:{Colors.NC} {Config.LOG_FILE}")
     print("")
 
@@ -87,8 +94,11 @@ def main():
     # Parse command line arguments
     args = parse_args()
     
-    # Update configuration
-    Config.update_from_args(args)
+    # Handle configuration file first
+    handle_config_options(args)
+    
+    # Then update config from command line arguments (overriding config file)
+    update_config_from_args(args)
     
     # Check if running as root
     check_root()
