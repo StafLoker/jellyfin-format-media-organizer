@@ -1,6 +1,6 @@
 # JFMO - Jellyfin Format Media Organizer
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.6+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
