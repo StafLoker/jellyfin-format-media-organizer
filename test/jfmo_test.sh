@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TEST script to organize media according to Jellyfin format
+# Jellyfin Format Media Organizer - TEST script
 # Only shows how files would be organized without making actual changes
 
 # Colors for better visualization
@@ -103,6 +103,13 @@ process_series() {
         
         # Get year if it exists
         year=$(get_year "$filename")
+        
+        # Special check for series named with year-like numbers (like "1923")
+        if [ "$series_name" = "$year" ]; then
+            # If series name is the same as detected year, don't use the year suffix
+            year=""
+        fi
+        
         year_suffix=""
         if [ -n "$year" ]; then
             year_suffix=" ($year)"
@@ -268,6 +275,12 @@ process_series_dir() {
     clean_series=$(clean_name "$dir_name")
     year=$(get_year "$dir_name")
     
+    # Special check for series named with year-like numbers (like "1923")
+    if [ "$clean_series" = "$year" ]; then
+        # If series name is the same as detected year, don't use the year suffix
+        year=""
+    fi
+    
     # Add year if it exists
     year_suffix=""
     if [ -n "$year" ]; then
@@ -357,11 +370,20 @@ detect_series_files() {
                 clean_base=$(clean_name "$base_name")
                 year=$(get_year "$example_name")
                 
-                echo -e "${YELLOW}Series detected:${NC} $clean_base ($year)"
+                # Check for series with year-like names
+                year_display=""
+                if [ "$clean_base" = "$year" ]; then
+                    # Don't show year in parentheses for series like "1923"
+                    year_display=""
+                elif [ -n "$year" ]; then
+                    year_display=" ($year)"
+                fi
+                
+                echo -e "${YELLOW}Series detected:${NC} $clean_base$year_display"
                 echo -e "  ${BLUE}→ File pattern:${NC} ${base_name}*"
                 echo -e "  ${BLUE}→ Example:${NC} $example_name"
                 echo -e "  ${BLUE}→ Episode count:${NC} $count"
-                echo -e "  ${BLUE}→ Destination:${NC} $SERIES/$clean_base ($year)/Season XX/"
+                echo -e "  ${BLUE}→ Destination:${NC} $SERIES/$clean_base$year_display/Season XX/"
                 echo ""
             fi
         fi
@@ -370,7 +392,7 @@ detect_series_files() {
 
 # Main function
 main() {
-    echo -e "${GREEN}🎬 JELLYFIN MEDIA ORGANIZATION SIMULATION${NC}"
+    echo -e "${GREEN}🎬 JELLYFIN FORMAT MEDIA ORGANIZATION SIMULATION${NC}"
     echo -e "${YELLOW}This is a test that will NOT make real changes to files${NC}"
     echo -e "${YELLOW}It only shows how files would be organized${NC}"
     echo ""

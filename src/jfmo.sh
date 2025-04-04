@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Main script to organize media according to Jellyfin format
+# Jellyfin Format Media Organizer - Main script
 # Reorganizes movies and TV shows according to the official Jellyfin format
 
 # Colors for better visualization
@@ -152,6 +152,13 @@ process_series() {
         
         # Get year if it exists
         year=$(get_year "$filename")
+        
+        # Special check for series named with year-like numbers (like "1923")
+        if [ "$series_name" = "$year" ]; then
+            # If series name is the same as detected year, don't use the year suffix
+            year=""
+        fi
+        
         year_suffix=""
         if [ -n "$year" ]; then
             year_suffix=" ($year)"
@@ -299,6 +306,12 @@ process_series_dir() {
     clean_series=$(clean_name "$dir_name")
     year=$(get_year "$dir_name")
     
+    # Special check for series named with year-like numbers (like "1923")
+    if [ "$clean_series" = "$year" ]; then
+        # If series name is the same as detected year, don't use the year suffix
+        year=""
+    fi
+    
     # Add year if it exists
     year_suffix=""
     if [ -n "$year" ]; then
@@ -349,7 +362,7 @@ process_series_dir() {
 
 # Main function
 main() {
-    echo -e "${GREEN}🎬 JELLYFIN MEDIA ORGANIZER${NC}"
+    echo -e "${GREEN}🎬 JELLYFIN FORMAT MEDIA ORGANIZER${NC}"
     if [ "$MOVE_FILES" = true ]; then
         echo -e "${YELLOW}MODE: MOVE${NC} - Files will be moved to their destinations"
     else
