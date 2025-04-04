@@ -22,7 +22,7 @@ MOVE_FILES=false
 # Change to true to generate a detailed log
 VERBOSE=true
 # Log file
-LOG_FILE="/tmp/jellyfin_organizer.log"
+LOG_FILE="/tmp/jfmo.log"
 
 # Start log
 echo "$(date) - Starting media organization" > "$LOG_FILE"
