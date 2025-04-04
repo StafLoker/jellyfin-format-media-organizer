@@ -76,15 +76,14 @@ class SeriesProcessor(MediaProcessor):
         # Store negative result in cache
         self.series_tmdb_cache[cache_key] = (None, year)
         return None, year
-    
+
     def process(self, file_path):
         """Process a TV series file"""
         filename = os.path.basename(file_path)
         
         Logger.info(f"Processing TV show: {filename}")
         
-        # Clean name and detect season/episode
-        clean_title = self.get_clean_title(filename)
+        # First detect season/episode
         season_episode = SeasonEpisodeDetector.detect(filename)
         
         if not season_episode:
@@ -98,12 +97,30 @@ class SeriesProcessor(MediaProcessor):
         
         season_num, episode_num = season_episode
         
-        # Extract series name (before the SxxExx pattern)
-        series_name = re.sub(r'S[0-9]{1,2}E[0-9]{1,2}.*$', '', clean_title).strip()
-        year, quality = self.get_year_and_quality(filename)
+        # Get a clean name without all the metadata
+        clean_title = self.get_clean_title(filename)
+        
+        # Extract series name - do a more thorough cleaning
+        series_name = clean_title
+        # Remove any remaining season/episode patterns
+        series_name = re.sub(r'S[0-9]{1,2}E[0-9]{1,2}.*$', '', series_name, flags=re.IGNORECASE).strip()
+        series_name = re.sub(r'[0-9]{1,2}x[0-9]{1,2}.*$', '', series_name, flags=re.IGNORECASE).strip()
+        series_name = re.sub(r'Season\s*[0-9]{1,2}.*$', '', series_name, flags=re.IGNORECASE).strip()
+        # Remove any years that might still be part of the title
+        series_name = re.sub(r'\b(19|20)[0-9]{2}\b', '', series_name).strip()
         
         OutputFormatter.print_file_processing_info("Series", series_name)
         OutputFormatter.print_file_processing_info("Season/Episode", f"S{int(season_num):02d}E{episode_num}")
+        
+        # Try to transliterate BEFORE getting metadata
+        original_name = series_name
+        series_name = Transliterator.transliterate_text(series_name)
+        if original_name != series_name:
+            OutputFormatter.print_file_processing_info("Transliteration", f"{original_name} → {series_name}")
+        
+        # Now get year and quality from the original filename
+        year, quality = self.get_year_and_quality(filename)
+        
         if year:
             OutputFormatter.print_file_processing_info("Year", year)
         if quality:
@@ -128,10 +145,6 @@ class SeriesProcessor(MediaProcessor):
         if series_name == year:
             # If series name is the same as detected year, don't use the year suffix
             year = ""
-        
-        # Remove year from series name if included
-        if year and year in series_name:
-            series_name = re.sub(r'\s+' + re.escape(year), '', series_name).strip()
         
         # Format season number with leading zeros
         season_num = f"{int(season_num):02d}"

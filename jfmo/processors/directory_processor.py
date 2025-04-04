@@ -59,12 +59,15 @@ class DirectoryProcessor:
         # Remove quality from series name
         if quality:
             series_name = re.sub(r'\b[0-9]{3,4}[pр]\b', '', series_name, flags=re.IGNORECASE).strip()
+        
+        # Remove year from series name if present
+        series_name = re.sub(r'\b(19|20)[0-9]{2}\b', '', series_name).strip()
             
         # Clean up double spaces
         series_name = re.sub(r'\s+', ' ', series_name).strip()
         
         return series_name, season_num, quality
-    
+
     def process_special_case(self, dir_path):
         """Process a special case directory"""
         dir_name = os.path.basename(dir_path)

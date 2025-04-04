@@ -54,18 +54,30 @@ class MovieProcessor(MediaProcessor):
         Logger.warning(f"No TMDB match found for movie: {title} {year if year else ''}")
         OutputFormatter.print_file_processing_info("TMDB", "No match found")
         return None, year
-    
+
     def process(self, file_path):
         """Process a movie file"""
         filename = os.path.basename(file_path)
         
         Logger.info(f"Processing movie: {filename}")
         
-        # Clean movie name and get metadata
+        # Clean movie name
         base_title = self.get_clean_title(filename)
-        year, quality = self.get_year_and_quality(filename)
+        
+        # Remove any years that might still be in the name
+        base_title = re.sub(r'\b(19|20)[0-9]{2}\b', '', base_title).strip()
         
         OutputFormatter.print_file_processing_info("Title", base_title)
+        
+        # Try to transliterate BEFORE getting metadata
+        original_title = base_title
+        base_title = Transliterator.transliterate_text(base_title)
+        if original_title != base_title:
+            OutputFormatter.print_file_processing_info("Transliteration", f"{original_title} → {base_title}")
+        
+        # Now get year and quality from the original filename
+        year, quality = self.get_year_and_quality(filename)
+        
         if year:
             OutputFormatter.print_file_processing_info("Year", year)
         if quality:
@@ -86,10 +98,6 @@ class MovieProcessor(MediaProcessor):
             return False
             
         tmdb_id, year = tmdb_id_info if tmdb_id_info else (None, year)
-        
-        # Remove year from title if it exists
-        if year and year in base_title:
-            base_title = re.sub(r'\s+' + re.escape(year), '', base_title).strip()
         
         # Format movie name with appropriate format
         extension = os.path.splitext(filename)[1]

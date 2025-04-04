@@ -42,9 +42,29 @@ class Transliterator:
         # Clean the text by removing unnecessary symbols
         cleaned_text = text.strip()
         
+        # Common Russian transliterated words and patterns that might help in detection
+        russian_indicators = [
+            'podslushano', 'rybinske', 'vypusk', 'kvartirnyj', 'vopros', 
+            'ot', 'tainstvennye', 'istorii', 'v', 'na', 'pri', 'dlya',
+            'shch', 'zh', 'ch', 'kh', 'ya', 'yu'
+        ]
+        
+        # Check if this might be Russian by looking for common transliterated words/patterns
+        might_be_russian = any(indicator in cleaned_text.lower() for indicator in russian_indicators)
+        
         # Try to detect language and transliterate
         try:
-            # Try each language
+            # Try Russian first if there are indicators
+            if might_be_russian:
+                try:
+                    translit_result = transliterate.translit(cleaned_text, 'ru', reversed=True)
+                    print(f"{Colors.YELLOW}Detected Russian from indicators:{Colors.NC} {cleaned_text} -> {translit_result}")
+                    Logger.info(f"Detected Russian from indicators: {cleaned_text} -> {translit_result}")
+                    return translit_result
+                except Exception:
+                    pass
+                    
+            # If that fails or wasn't Russian, try all languages
             for lang in Config.TRANSLITERATION_LANGS:
                 try:
                     # Check if this text can be reverse transliterated to this language
