@@ -29,6 +29,42 @@ class DirectoryProcessor:
         """Check if directory is a special case (like "La Casa de Papel 3")"""
         return bool(re.search(r'(La Casa de Papel) ([0-9])', dir_name))
     
+    def extract_series_info_from_directory(self, dir_name):
+        """
+        Extract series name, season, and quality from directory name
+        
+        Args:
+            dir_name (str): Directory name
+            
+        Returns:
+            tuple: (series_name, season_num, quality)
+        """
+        # Clean the directory name first
+        clean_dir = FileOps.clean_name(dir_name)
+        
+        # Try to extract season number
+        season_num = SeasonEpisodeDetector.detect_season_only(dir_name)
+        
+        # Try to extract quality
+        quality_match = re.search(r'([0-9]{3,4})[pр]', dir_name)
+        quality = f"[{quality_match.group(1)}p]" if quality_match else ""
+        
+        # Extract series name - remove season part if found
+        series_name = clean_dir
+        if season_num:
+            # Remove season identifier (e.g., "s01", "season 1") from series name
+            series_name = re.sub(r'\bs[0-9]{1,2}\b', '', series_name, flags=re.IGNORECASE).strip()
+            series_name = re.sub(r'\bseason\s*[0-9]{1,2}\b', '', series_name, flags=re.IGNORECASE).strip()
+        
+        # Remove quality from series name
+        if quality:
+            series_name = re.sub(r'\b[0-9]{3,4}[pр]\b', '', series_name, flags=re.IGNORECASE).strip()
+            
+        # Clean up double spaces
+        series_name = re.sub(r'\s+', ' ', series_name).strip()
+        
+        return series_name, season_num, quality
+    
     def process_special_case(self, dir_path):
         """Process a special case directory"""
         dir_name = os.path.basename(dir_path)
@@ -168,8 +204,11 @@ class DirectoryProcessor:
         if self.is_special_case(dir_name):
             return self.process_special_case(dir_path)
         
+        # Extract information from directory name
+        series_name, dir_season_num, dir_quality = self.extract_series_info_from_directory(dir_name)
+        
         # General cleaning for other cases
-        clean_series = FileOps.clean_name(dir_name)
+        clean_series = series_name
         year = YearDetector.get_year(dir_name)
         
         # Try to transliterate
@@ -221,6 +260,10 @@ class DirectoryProcessor:
         OutputFormatter.print_file_processing_info("Series", clean_series)
         if year:
             OutputFormatter.print_file_processing_info("Year", year)
+        if dir_season_num:
+            OutputFormatter.print_file_processing_info("Directory Season", dir_season_num)
+        if dir_quality:
+            OutputFormatter.print_file_processing_info("Directory Quality", dir_quality)
         if tmdb_id:
             OutputFormatter.print_file_processing_info("TMDB ID", tmdb_id)
         OutputFormatter.print_file_processing_info("Target Directory", series_dir)
@@ -246,6 +289,16 @@ class DirectoryProcessor:
                     
                     # Detect season and episode with multiple patterns
                     season_episode = SeasonEpisodeDetector.detect(filename)
+                    
+                    # If full pattern not found but we have season from directory
+                    if not season_episode and dir_season_num:
+                        # Try to extract just the episode number
+                        episode_num = SeasonEpisodeDetector.detect_episode_only(filename)
+                        if episode_num:
+                            season_episode = (dir_season_num, episode_num)
+                            OutputFormatter.print_file_processing_info("Detection", 
+                                           f"Using season {dir_season_num} from directory")
+                    
                     if season_episode:
                         season_num, episode_num = season_episode
                         
@@ -253,7 +306,9 @@ class DirectoryProcessor:
                         season_num = f"{int(season_num):02d}"
                         
                         # Get quality if it exists
-                        quality = QualityDetector.get_quality(filename)
+                        file_quality = QualityDetector.get_quality(filename)
+                        # Use directory quality if file doesn't have quality info
+                        quality = file_quality if file_quality else dir_quality
                         quality_suffix = f" - {quality}" if quality else ""
                         
                         # Create season directory
