@@ -1,145 +1,140 @@
-# Jellyfin Format Media Organizer
+# JFMO - Jellyfin Format Media Organizer
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![Bash](https://img.shields.io/badge/language-bash-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Python](https://img.shields.io/badge/python-3.6+-green.svg)
+![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
-A powerful media organization tool designed to automatically structure and rename your media files according to Jellyfin's recommended naming conventions.
-
-## Overview
-
-This tool helps you organize your downloaded media files (movies and TV shows) by automatically:
-
-- Detecting and categorizing content as either movies or TV series
-- Cleaning file names (removing unnecessary tags, prefixes, etc.)
-- Extracting relevant metadata (year, quality)
-- Creating proper directory structures
-- Renaming files to match Jellyfin's recommended format
-- Handling special cases (series with numbered seasons in the title)
-- Setting correct permissions and ownership for Jellyfin
-- Removing empty directories after processing
-
-Perfect for maintaining a clean, consistent, and Jellyfin-friendly media library.
+JFMO is a powerful media organization tool designed to automatically structure and rename your media files according to Jellyfin's recommended naming conventions. It features automatic transliteration support for non-Latin alphabets, making it perfect for multilingual media collections.
 
 ## Features
 
-- **Smart Detection**: Identifies movies and TV shows based on filename patterns
-- **Proper Formatting**:
-  - Movies: `Title (Year) - [Quality].extension`
-  - TV Shows: `Series Name (Year)/Season XX/Series Name SxxExx - [Quality].extension`
-- **Metadata Extraction**: Automatically extracts year and quality information
-- **Name Cleanup**: Removes unnecessary prefixes like `[NOOBDL]` and suffixes like `LostFilm.TV`
-- **Multiple Patterns**: Recognizes various episode naming patterns (S01E01, S01.E01, etc.)
-- **Special Cases**: Handles edge cases like `La Casa de Papel 3`
-- **Proper Permissions**: Sets correct ownership (`jellyfin:media`) and permissions for all processed files
-- **Directory Cleanup**: Automatically removes empty directories after files are moved
-- **Detailed Logging**: Maintains comprehensive logs of all operations
-
-## Requirements
-
-- Bash shell environment
-- Linux/Unix-based system
-- Standard text processing utilities (sed, grep)
-- Root permissions (to set proper file ownership)
+- **Smart Media Detection** - Automatically identifies movies and TV shows
+- **Proper Jellyfin Naming** - Renames files to Jellyfin's recommended format
+- **Auto-Transliteration** - Converts transliterated names to their native scripts (Cyrillic, etc.)
+- **Permissions Management** - Sets correct ownership and permissions for Jellyfin
+- **Directory Structure** - Creates proper directory hierarchies for TV shows
+- **Metadata Extraction** - Extracts year, quality, season/episode information
+- **Directory Cleanup** - Removes empty directories after moving files
+- **Test Mode** - Preview changes without modifying files
 
 ## Installation
 
-1. Clone this repository or download the scripts:
+### Prerequisites
+
+- Python 3.6+
+
+### Setting up a Virtual Environment
+
+It's recommended to install JFMO in a virtual environment to avoid conflicts with other Python packages:
 
 ```bash
-git clone https://github.com/StafLoker/jellyfin-format-media-organizer.git
-cd jellyfin-format-media-organizer
+# Clone the repository
+git clone https://github.com/yourusername/jfmo.git
+cd jfmo
+
+# Create a virtual environment
+python -m venv venv
+
+# Activate the virtual environment
+# On Linux/macOS:
+source venv/bin/activate
+# On Windows:
+venv\Scripts\activate
+
+# Install dependencies
+pip install transliterate
+
+# Install JFMO in development mode
+pip install -e .
 ```
 
-2. Make the scripts executable:
+To deactivate the virtual environment when you're done:
+```bash
+deactivate
+```
+
+### Installing Globally
+
+If you prefer to install JFMO globally:
 
 ```bash
-chmod +x jfmo_test.sh
-chmod +x jfmo.sh
+git clone https://github.com/yourusername/jfmo.git
+cd jfmo
+pip install .
 ```
 
 ## Usage
 
-### Step 1: Test Run (Recommended)
+### Basic Usage
 
-Always start with a test run to see what changes will be made without actually modifying any files:
-
-```bash
-./jfmo_test.sh
-```
-
-This will analyze your media files and show you a detailed report of how they would be organized.
-
-### Step 2: Run the Organizer
-
-When you're satisfied with the proposed changes, run the main script with sudo (required for changing file permissions):
+Run in test mode first to see what changes would be made without modifying files:
 
 ```bash
-sudo ./jfmo.sh
+# If installed in a virtual environment:
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+jfmo --test
+
+# Or if running directly from the repository:
+python -m jfmo --test
 ```
 
-The script will:
-- Move your files to their proper locations
-- Rename them according to Jellyfin conventions
-- Set the correct ownership and permissions
-- Delete empty source directories
-
-## Configuration
-
-Edit the scripts to customize their behavior:
-
-### Basic Configuration
-
-At the top of the main script, you'll find variables you can modify:
+When you're ready to make actual changes:
 
 ```bash
-# Base directories
-MEDIA_DIR="/data/media"
-DOWNLOADS="$MEDIA_DIR/downloads"
-FILMS="$MEDIA_DIR/films"
-SERIES="$MEDIA_DIR/series"
-
-# CONFIGURATION
-VERBOSE=true        # Set to false for less detailed logs
-LOG_FILE="/tmp/jfmo.log"
-
-# Default user and group for media files
-MEDIA_USER="jellyfin"
-MEDIA_GROUP="media"
+# Using sudo requires global installation or specifying the full path to the venv Python
+sudo jfmo
+# Or if using a virtual environment:
+sudo /path/to/venv/bin/jfmo
 ```
 
-## Directory Structure
+Root permissions are required to set proper file ownership.
 
-The scripts expect and create the following directory structure:
+### Command Line Options
 
 ```
-/data/media/
-├── downloads/    # Source directory with unorganized files
-├── films/        # Destination for movies
-└── series/       # Destination for TV shows
+Usage: jfmo [OPTIONS]
+
+Options:
+  --test                  Run in test mode (no actual changes made)
+  --quiet                 Suppress log messages
+  --media-dir DIRECTORY   Base media directory (default: /data/media)
+  --downloads DIRECTORY   Downloads directory
+  --films DIRECTORY       Films directory
+  --series DIRECTORY      TV series directory
+  --user USERNAME         Media files owner (default: jellyfin)
+  --group GROUPNAME       Media files group (default: media)
+  --log FILEPATH          Log file path
+  --version               Show version and exit
+  -h, --help              Show this help message
 ```
 
 ## Examples
 
-### Before:
+### Before Organization
+
 ```
 /data/media/downloads/
 ├── Severance.S02E02.1080p.rus.LostFilm.TV.mkv
-├── The.Gorge.2025.2160p.SDR.mkv
+├── Podslushano.v.Rybinske.S01.2024.SDR.WEB-DL.2160p/
+├── The.Accountant.2.2024.2160p.HDTV.mkv
 └── La Casa de Papel 3 - LostFilm.TV [1080p]/
     └── (various episode files)
 ```
 
-### After:
+### After Organization
+
 ```
 /data/media/
-├── downloads/
-│   └── incomplete/  # Only incomplete downloads remain
 ├── films/
-│   └── The Gorge (2025) - [2160p].mkv
+│   └── The Accountant 2 (2024) - [2160p].mkv
 └── series/
     ├── La Casa de Papel/
     │   └── Season 03/
     │       ├── La Casa de Papel S03E01 - [1080p].mkv
+    │       └── ...
+    ├── Подслушано в Рыбинске (2024)/   # Auto-transliterated from Russian
+    │   └── Season 01/
+    │       ├── Подслушано в Рыбинске S01E01 - [2160p].mkv
     │       └── ...
     └── Severance/
         └── Season 02/
@@ -147,26 +142,58 @@ The scripts expect and create the following directory structure:
             └── ...
 ```
 
-All files will have proper jellyfin:media ownership and correct permissions (775 for directories, 664 for files).
+## Transliteration Support
+
+JFMO automatically detects and converts transliterated text back to its original script. Supported languages:
+
+- Russian
+- Ukrainian
+- Bulgarian
+- Serbian
+- Macedonian
+- Greek
+- Georgian
+- Armenian
+- Hebrew
+
+## File Naming Convention
+
+JFMO uses the following naming conventions:
+
+### Movies
+```
+Title (Year) - [Quality].extension
+```
+
+### TV Series
+```
+Series Name (Year)/Season XX/Series Name SXXEXX - [Quality].extension
+```
+
+## Extending JFMO
+
+JFMO is built with a modular architecture that makes it easy to extend:
+
+```
+jfmo/
+├── detectors/       # Add new content detection algorithms
+├── processors/      # Add new media processing methods
+└── utils/           # Add new utility functions
+```
 
 ## Troubleshooting
 
-- **Files not detected properly**: Check that they match one of the supported patterns
-- **Permission issues**: Ensure you're running the script with sudo (`sudo ./jfmo.sh`)
-- **Log file**: Check the log file for detailed error information (`/tmp/jfmo.log` by default)
+- **Permission errors**: Make sure to run with `sudo` when not in test mode
+- **Files not detected**: Check if your file naming patterns match JFMO's detection patterns
+- **Transliteration issues**: Ensure the `transliterate` package is installed correctly
+- **Check logs**: Examine `/tmp/jfmo.log` for detailed operation logs
+- **Virtual environment issues**: If using sudo with a venv, make sure to use the full path to the Python interpreter in the venv
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Version History
+## Acknowledgments
 
-- **1.1.0** (Current)
-  - Now always moves files instead of copying
-  - Sets proper ownership (jellyfin:media) and permissions
-  - Automatically removes empty directories after processing
-  - Requires sudo to run properly
-- **1.0.0** (Initial Release)
-  - Basic functionality for organizing movies and TV shows
-  - Test mode for safe operation
-  - Comprehensive pattern recognition for various file naming schemes
+- [Jellyfin Media Server](https://jellyfin.org/) for their naming recommendations
+- [transliterate](https://pypi.org/project/transliterate/) for multilingual support
