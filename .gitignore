@@ -3,6 +3,7 @@
 ###########
 
 .venv
+test_environment
 
 #########
 # MacOS #
