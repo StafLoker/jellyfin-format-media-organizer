@@ -5,6 +5,8 @@
 Transliteration module for JFMO
 """
 
+import os
+import re
 from ..config import Config
 from .colors import Colors
 from .logger import Logger
@@ -24,15 +26,70 @@ class Transliterator:
     @staticmethod
     def detect_language(text):
         """Detect the language of a transliterated text"""
-        for lang in Config.TRANSLITERATION_LANGS:
-            if transliterate.detect_language(text, lang):
-                return lang
-        return None
+        # We only support Russian transliteration
+        return 'ru' if Transliterator.is_possibly_russian(text) else None
+    
+    @staticmethod
+    def is_possibly_russian(name):
+        """
+        Determine if a filename is possibly a transliteration from Russian
+        using advanced linguistic heuristics
+        
+        Args:
+            name (str): Filename or text to analyze
+            
+        Returns:
+            bool: True if possibly Russian, False otherwise
+        """
+        # Normalize
+        name = name.lower().replace('_', '.')
+        name = os.path.splitext(name)[0]  # Remove extension
+        words = re.split(r'\W+', name)  # Split by non-alphanumeric separators
+        
+        # 1. Russian functional words in transliteration
+        russian_prepositions = {'v', 'vo', 'na', 'za', 'ot', 'do', 's', 'so', 'iz', 'po', 'o', 'ob', 
+                              'nad', 'pod', 'pered', 'pri', 'pro', 'bez'}
+        if any(word in russian_prepositions for word in words):
+            return True
+            
+        # 2. Detect common Russian phonetic patterns
+        phonetic_patterns = ['zh', 'shch', 'kh', 'ts', 'ya', 'yu', 'ye', 'yo', 'iy', 'yy']
+        if any(pat in name for pat in phonetic_patterns):
+            return True
+            
+        # 3. Number of long words or words with double consonants
+        if sum(1 for p in words if len(p) >= 8) >= 2:
+            return True
+            
+        # 4. Letters uncommon in English but common in Russian transliterations
+        suspicious_letters = set('zhchshyaeyo')  # translit-friendly
+        rarity = sum(1 for c in name if c in suspicious_letters)
+        if rarity / (len(name) + 1) > 0.05:
+            return True
+            
+        # 5. File names with structure that doesn't match normal English
+        if re.search(r'\b(v|ot|vypusk|seriya|serii)\b', name):
+            return True
+            
+        # 6. Common Russian words found in file names
+        russian_words = {'podslushano', 'istorii', 'vypusk', 'kvartirnyj', 'vopros', 'gorod', 
+                        'chelovek', 'mashina', 'vremya', 'novye', 'novyj', 'tainstvennye', 'rybinske'}
+        if any(word in russian_words for word in words):
+            return True
+            
+        # 7. More than 40% of words end with -yj, -ij, -aya, -oe, etc.
+        russian_endings = ['yj', 'ij', 'aya', 'oye', 'oe', 'ye', 'ogo', 'ego', 'ikh', 'ykh']
+        russian_words_count = sum(1 for p in words if any(p.endswith(t) for t in russian_endings))
+        if russian_words_count > 0 and russian_words_count / len(words) >= 0.3:
+            return True
+            
+        # By default, we don't consider it Russian
+        return False
     
     @staticmethod
     def transliterate_text(text):
         """
-        Try to detect if text is transliterated from a non-Latin alphabet
+        Try to detect if text is transliterated from Russian
         and convert it back to its original script
         """
         # Skip if text already contains non-latin characters
@@ -46,74 +103,17 @@ class Transliterator:
         # Clean the text by removing unnecessary symbols
         cleaned_text = text.strip()
         
-        # Specific transliterated Russian indicators
-        russian_indicators = [
-            'podslushano', 'rybinske', 'vypusk', 'kvartirnyj', 'vopros', 
-            'tainstvennye', 'istorii'
-        ]
-        
-        # Common English words that should NOT be considered as indicators
-        english_common = [
-            'the', 'and', 'doctor', 'who', 'christmas', 'special', 'episode',
-            'season', 'part', 'show', 'series', 'movie', 'film', 'documentary',
-            'avatar', 'friends', 'house', 'game', 'breaking', 'bad', 'severance',
-            'succession', 'loki', 'mandalorian', 'stranger', 'things', 'daily'
-        ]
-        
-        # Check if the text contains common English words
-        words = cleaned_text.lower().split()
-        
-        # If no words, return the original text
-        if not words:
-            return text
-            
-        common_english_word_count = sum(1 for word in words if word in english_common)
-        
-        # If there are many common English words, it's not Russian
-        if common_english_word_count > 0 and common_english_word_count / len(words) > 0.2:
-            return text
-        
-        # Check for specific Russian indicators
-        specific_russian_indicators = [word for word in words if word in russian_indicators]
-        might_be_russian = len(specific_russian_indicators) > 0
-        
-        # Try to detect language and transliterate
-        try:
-            # Try Russian first if there are indicators
-            if might_be_russian:
-                try:
-                    translit_result = transliterate.translit(cleaned_text, 'ru', reversed=True)
-                    # Check if transliteration actually changed something substantial
-                    if translit_result != cleaned_text:
-                        print(f"{Colors.YELLOW}Transliterated from Russian:{Colors.NC} {cleaned_text} → {translit_result}")
-                        Logger.info(f"Transliterated from Russian: {cleaned_text} → {translit_result}")
-                        return translit_result
-                except Exception:
-                    pass
-                    
-            # If not Russian but title doesn't seem English (few English indicators), try other languages
-            if common_english_word_count / len(words) < 0.2:
-                for lang in Config.TRANSLITERATION_LANGS:
-                    if lang == 'ru':  # Already tried Russian
-                        continue
-                    try:
-                        # Check if this text can be reverse transliterated to this language
-                        reverse_translit = transliterate.detect_language(cleaned_text, lang)
-                        if reverse_translit:
-                            # Confirm it's not just a coincidental match with a few letters
-                            if len(cleaned_text) > 3:  # More than 3 chars
-                                try:
-                                    translit_result = transliterate.translit(cleaned_text, lang, reversed=True)
-                                    if translit_result != cleaned_text:  # Only if there's a real change
-                                        print(f"{Colors.YELLOW}Transliterated from '{lang}':{Colors.NC} {cleaned_text} → {translit_result}")
-                                        Logger.info(f"Transliterated from '{lang}': {cleaned_text} → {translit_result}")
-                                        return translit_result
-                                except:
-                                    continue
-                    except Exception:
-                        continue
-        except Exception as e:
-            print(f"{Colors.RED}Error in transliteration: {str(e)}{Colors.NC}")
-            Logger.error(f"Error in transliteration: {str(e)}")
+        # Check if the text is possibly Russian
+        if Transliterator.is_possibly_russian(cleaned_text):
+            try:
+                translit_result = transliterate.translit(cleaned_text, 'ru', reversed=True)
+                # Check if transliteration actually changed something substantial
+                if translit_result != cleaned_text:
+                    print(f"{Colors.YELLOW}Transliterated from Russian:{Colors.NC} {cleaned_text} → {translit_result}")
+                    Logger.info(f"Transliterated from Russian: {cleaned_text} → {translit_result}")
+                    return translit_result
+            except Exception as e:
+                print(f"{Colors.RED}Error in transliteration: {str(e)}{Colors.NC}")
+                Logger.error(f"Error in transliteration: {str(e)}")
         
         return text

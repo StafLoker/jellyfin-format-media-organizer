@@ -33,7 +33,7 @@ class Config:
     INTERACTIVE_MODE = True  # Enable interactive mode by default
     
     # Supported languages for transliteration
-    TRANSLITERATION_LANGS = ['ru', 'uk', 'bg', 'mk', 'sr', 'el', 'ka', 'hy', 'he']
+    TRANSLITERATION_LANGS = ['ru']
     
     # Video file extensions
     VIDEO_EXTENSIONS = ('.mkv', '.mp4', '.avi', '.m4v', '.mov', '.wmv', '.flv')

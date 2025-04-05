@@ -389,17 +389,18 @@ Since the test environment uses your current user, you don't need to use `sudo` 
 
 ## Transliteration Support
 
-JFMO automatically detects and converts transliterated text back to its original script. Supported languages:
+JFMO automatically detects and converts Russian transliterated text back to Cyrillic script. It uses an advanced linguistic algorithm to identify potentially Russian filenames by looking for:
 
-- Russian
-- Ukrainian
-- Bulgarian
-- Serbian
-- Macedonian
-- Greek
-- Georgian
-- Armenian
-- Hebrew
+1. Russian functional words in transliteration (v, na, ot, etc.)
+2. Phonetic patterns common in Russian (zh, shch, ya, etc.)
+3. Unusual word length and character patterns
+4. Letter frequency unusual in English but common in transliterated Russian
+5. Specific Russian terms common in media filenames
+6. Russian grammatical endings (-yj, -aya, etc.)
+
+This allows for accurate conversion of filenames like:
+- "Podslushano.v.Rybinske" → "Подслушано.в.Рыбинске"
+- "Tainstvennye.Istorii" → "Таинственные.Истории"
 
 ## File Naming Convention
 
