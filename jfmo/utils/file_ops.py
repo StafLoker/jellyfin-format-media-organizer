@@ -24,6 +24,12 @@ class FileOps:
         # Remove extension if present
         name = os.path.splitext(name)[0]
         
+        # Preserve numeric series names (like 1923)
+        numeric_series_match = re.match(r'^([12][0-9]{3})\.', name)
+        numeric_series_name = None
+        if numeric_series_match:
+            numeric_series_name = numeric_series_match.group(1)
+        
         # Remove prefixes in brackets like [NOOBDL]
         name = re.sub(r'\[[^\]]*\]', '', name)
         
@@ -34,7 +40,7 @@ class FileOps:
         # Remove alternative titles in parentheses
         name = re.sub(r' ?\([^)]+\)', '', name)
         
-        # Remove season and episode patterns - ampliado para incluir más patrones
+        # Remove season and episode patterns - expanded for more patterns
         name = re.sub(r'S[0-9]{1,2}\.?E[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
         name = re.sub(r'S[0-9]{1,2}\s*\.\s*E[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
         name = re.sub(r'Season\s*[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
@@ -53,11 +59,18 @@ class FileOps:
         name = re.sub(r'\b(480|720|1080|2160|4320)p\b', '', name, flags=re.IGNORECASE)
         name = re.sub(r'\b(WEB|WEB-DL|WEBDL|HDR|SDR|BDRip|BluRay|x264|x265|HEVC|H264|H265)\b.*', '', name, flags=re.IGNORECASE)
         
-        # Remove year at the end if no es un título que sea un año
-        name = re.sub(r'\s+(19|20)[0-9]{2}\b', '', name)
-        
-        return name.strip()
-
+        # Remove year at the end if it's not a numeric series title
+        if numeric_series_name and not name.strip():
+            # If cleaning removed everything and we had a numeric series name, restore it
+            return numeric_series_name
+        elif numeric_series_name and name.strip() == numeric_series_name:
+            # If name equals the numeric series name, keep it
+            return name.strip()
+        else:
+            # Otherwise remove years at the end
+            name = re.sub(r'\s+(19|20)[0-9]{2}\b', '', name)
+            return name.strip()
+    
     @staticmethod
     def set_permissions(path, is_dir=False):
         """Set correct permissions and ownership"""

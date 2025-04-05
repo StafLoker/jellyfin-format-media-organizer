@@ -76,7 +76,7 @@ class SeriesProcessor(MediaProcessor):
         # Store negative result in cache
         self.series_tmdb_cache[cache_key] = (None, year)
         return None, year
-
+    
     def process(self, file_path):
         """Process a TV series file"""
         filename = os.path.basename(file_path)
@@ -97,8 +97,6 @@ class SeriesProcessor(MediaProcessor):
         
         season_num, episode_num = season_episode
         
-        # Verificar si el nombre del archivo comienza con 4 dígitos (como 1923.S01E02.720p.mkv)
-        # Si es así, debemos preservar esos dígitos como el título de la serie
         numeric_series_match = re.match(r'^([12][0-9]{3})\.', filename)
         numeric_series_name = None
         if numeric_series_match:
@@ -108,24 +106,20 @@ class SeriesProcessor(MediaProcessor):
         # Get a clean name without all the metadata
         clean_title = self.get_clean_title(filename)
         
-        # Si detectamos una serie con nombre numérico pero la limpieza lo eliminó, restaurarlo
         if numeric_series_name and not clean_title.strip():
             clean_title = numeric_series_name
             
+        # Remove S01.E01 pattern that might remain in the name
+        if re.search(r'S[0-9]{1,2}\s*\.\s*E[0-9]{1,2}', clean_title, re.IGNORECASE):
+            clean_title = re.sub(r'S[0-9]{1,2}\s*\.\s*E[0-9]{1,2}.*', '', clean_title, re.IGNORECASE).strip()
+        
         # Extract series name - do a more thorough cleaning
         series_name = clean_title
-        # Remove any remaining season/episode patterns
-        series_name = re.sub(r'S[0-9]{1,2}E[0-9]{1,2}.*$', '', series_name, flags=re.IGNORECASE).strip()
-        series_name = re.sub(r'[0-9]{1,2}x[0-9]{1,2}.*$', '', series_name, flags=re.IGNORECASE).strip()
-        series_name = re.sub(r'Season\s*[0-9]{1,2}.*$', '', series_name, flags=re.IGNORECASE).strip()
         
-        # Si aún así el nombre quedó vacío pero teníamos un nombre numérico, restaurarlo
         if not series_name.strip() and numeric_series_name:
             series_name = numeric_series_name
         
-        # No eliminar años si el título de la serie es el año mismo
         if not series_name.strip() or (numeric_series_name and series_name.strip() == numeric_series_name):
-            # No eliminar el año si es el nombre de la serie
             pass
         else:
             # Remove any years that might still be part of the title
@@ -165,7 +159,6 @@ class SeriesProcessor(MediaProcessor):
         
         # Special check for series named with year-like numbers (like "1923")
         if numeric_series_name and series_name == numeric_series_name:
-            # Para series con nombre numérico, solo usar año si es diferente del nombre
             if year == series_name:
                 year = ""
         
@@ -177,12 +170,12 @@ class SeriesProcessor(MediaProcessor):
         
         # Create series name with TMDB ID if available
         if tmdb_id:
-            if year and year != series_name:  # No añadir año si es igual al nombre de la serie
+            if year and year != series_name:
                 series_dir_name = f"{series_name} ({year}) [tmdbid-{tmdb_id}]"
             else:
                 series_dir_name = f"{series_name} [tmdbid-{tmdb_id}]"
         else:
-            if year and year != series_name:  # No añadir año si es igual al nombre de la serie
+            if year and year != series_name:
                 series_dir_name = f"{series_name} ({year})"
             else:
                 series_dir_name = series_name

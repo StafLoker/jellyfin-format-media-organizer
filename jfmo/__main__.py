@@ -7,6 +7,7 @@ Main module for JFMO
 
 import os
 import sys
+import re
 from collections import defaultdict
 
 from .config import Config
@@ -52,22 +53,20 @@ def process_files():
                 ])
             
             # Excluir patrones específicos de películas
-            # Si contiene (YYYY) o YYYY seguido de p (resolución)
-            has_movie_pattern = bool(re.search(r'\([12][0-9]{3}\)', filename) or \
-                                    re.search(r'[12][0-9]{3}\.[0-9]+p', filename))
+            # Películas conocidas
+            known_movies = ['2001', 'Interstellar', 'Ocean', 'Matrix', 'Avatar', 'Inception',
+                          'Pulp Fiction', 'Dune', 'Oppenheimer']
+            is_known_movie = any(movie.lower() in filename.lower() for movie in known_movies)
             
-            # Si es un número de 4 dígitos al inicio, tratar como serie (como 1923)
-            if re.match(r'^[12][0-9]{3}\.', filename):
+            # Si es un número de 4 dígitos al inicio, tratar como serie (como 1923, 1883)
+            if re.match(r'^[12][0-9]{3}\.S[0-9]{1,2}', filename):
                 is_series = True
-                has_movie_pattern = False
+                is_known_movie = False
             
-            # Archivos conocidos por ser películas aunque tengan patrones ambiguos
-            known_movies = ['2001', 'Interstellar', 'Ocean']
-            if any(movie in filename for movie in known_movies):
+            if is_known_movie:
                 is_series = False
-                has_movie_pattern = True
             
-            if is_series and not has_movie_pattern:
+            if is_series:
                 season_episode = SeasonEpisodeDetector.detect(filename)
                 if season_episode:
                     OutputFormatter.print_file_processing_info("Detected", "TV Series")

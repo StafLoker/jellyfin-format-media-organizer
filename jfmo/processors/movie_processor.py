@@ -54,18 +54,27 @@ class MovieProcessor(MediaProcessor):
         Logger.warning(f"No TMDB match found for movie: {title} {year if year else ''}")
         OutputFormatter.print_file_processing_info("TMDB", "No match found")
         return None, year
-
+    
     def process(self, file_path):
         """Process a movie file"""
         filename = os.path.basename(file_path)
         
         Logger.info(f"Processing movie: {filename}")
         
+        numeric_movie_match = re.match(r'^([12][0-9]{3})\.', filename)
+        numeric_movie_name = None
+        if numeric_movie_match:
+            numeric_movie_name = numeric_movie_match.group(1)
+            
         # Clean movie name
-        base_title = self.get_clean_title(filename)
+        clean_title = self.get_clean_title(filename)
         
-        # Remove any years that might still be in the name
-        base_title = re.sub(r'\b(19|20)[0-9]{2}\b', '', base_title).strip()
+        if numeric_movie_name and (not clean_title.strip() or 
+                                 clean_title.strip() == "A Space Odyssey"):
+            clean_title = f"{numeric_movie_name} {clean_title}"
+            
+        # Get a clean name without all the metadata
+        base_title = clean_title
         
         OutputFormatter.print_file_processing_info("Title", base_title)
         

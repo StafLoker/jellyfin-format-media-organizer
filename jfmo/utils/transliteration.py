@@ -28,7 +28,7 @@ class Transliterator:
             if transliterate.detect_language(text, lang):
                 return lang
         return None
-
+    
     @staticmethod
     def transliterate_text(text):
         """
@@ -39,6 +39,10 @@ class Transliterator:
         if any(ord(c) > 127 for c in text):
             return text
 
+        # Skip if text is empty
+        if not text.strip():
+            return text
+            
         # Clean the text by removing unnecessary symbols
         cleaned_text = text.strip()
         
@@ -46,11 +50,6 @@ class Transliterator:
         russian_indicators = [
             'podslushano', 'rybinske', 'vypusk', 'kvartirnyj', 'vopros', 
             'tainstvennye', 'istorii'
-        ]
-        
-        # Combinaciones de letras específicas que son comunes en ruso transliterado
-        russian_patterns = [
-            'shch', 'zh', 'kh', 'ts', 'ch', 'sch'
         ]
         
         # Palabras en inglés comunes que NO deben ser consideradas como indicadores
@@ -63,18 +62,20 @@ class Transliterator:
         
         # Verificar si el texto contiene palabras inglesas comunes
         words = cleaned_text.lower().split()
+        
+        # Si no hay palabras, devolver el texto original
+        if not words:
+            return text
+            
         common_english_word_count = sum(1 for word in words if word in english_common)
         
         # Si hay muchas palabras inglesas comunes, no es ruso
-        if common_english_word_count > 0 and common_english_word_count / len(words) > 0.3:
+        if common_english_word_count > 0 and common_english_word_count / len(words) > 0.2:
             return text
         
         # Verificar indicadores específicos de ruso
         specific_russian_indicators = [word for word in words if word in russian_indicators]
-        russian_pattern_matches = [pattern for pattern in russian_patterns if pattern in cleaned_text.lower()]
-        
-        # Solo transliterar si hay indicadores específicos rusos
-        might_be_russian = len(specific_russian_indicators) > 0 or len(russian_pattern_matches) >= 2
+        might_be_russian = len(specific_russian_indicators) > 0
         
         # Try to detect language and transliterate
         try:
@@ -84,8 +85,8 @@ class Transliterator:
                     translit_result = transliterate.translit(cleaned_text, 'ru', reversed=True)
                     # Verificar si la transliteración realmente cambió algo sustancial
                     if translit_result != cleaned_text:
-                        print(f"{Colors.YELLOW}Detected Russian from indicators:{Colors.NC} {cleaned_text} -> {translit_result}")
-                        Logger.info(f"Detected Russian from indicators: {cleaned_text} -> {translit_result}")
+                        print(f"{Colors.YELLOW}Transliterated from Russian:{Colors.NC} {cleaned_text} → {translit_result}")
+                        Logger.info(f"Transliterated from Russian: {cleaned_text} → {translit_result}")
                         return translit_result
                 except Exception:
                     pass
@@ -101,11 +102,14 @@ class Transliterator:
                         if reverse_translit:
                             # Confirm it's not just a coincidental match with a few letters
                             if len(cleaned_text) > 3:  # More than 3 chars
-                                translit_result = transliterate.translit(cleaned_text, lang, reversed=True)
-                                if translit_result != cleaned_text:  # Solo si hay cambio real
-                                    print(f"{Colors.YELLOW}Transliterated from '{lang}':{Colors.NC} {cleaned_text} -> {translit_result}")
-                                    Logger.info(f"Transliterated from '{lang}': {cleaned_text} -> {translit_result}")
-                                    return translit_result
+                                try:
+                                    translit_result = transliterate.translit(cleaned_text, lang, reversed=True)
+                                    if translit_result != cleaned_text:  # Solo si hay cambio real
+                                        print(f"{Colors.YELLOW}Transliterated from '{lang}':{Colors.NC} {cleaned_text} → {translit_result}")
+                                        Logger.info(f"Transliterated from '{lang}': {cleaned_text} → {translit_result}")
+                                        return translit_result
+                                except:
+                                    continue
                     except Exception:
                         continue
         except Exception as e:
