@@ -58,11 +58,17 @@ class SeriesProcessor(MediaProcessor):
             
         if tv_show:
             tmdb_id = tv_show.get('id')
-            # Get year from TMDB if not provided
-            if not year and 'first_air_date' in tv_show and tv_show['first_air_date']:
-                year = tv_show['first_air_date'][:4]
+            
+            # Get year from TMDB if available
+            tmdb_year = None
+            if 'first_air_date' in tv_show and tv_show['first_air_date']:
+                tmdb_year = tv_show['first_air_date'][:4]
+                
+            if tmdb_year:
+                year = tmdb_year
                 
             Logger.info(f"Found TMDB match for series '{title}': ID {tmdb_id}, Year: {year}")
+            
             OutputFormatter.print_file_processing_info("TMDB Match", f"ID: {tmdb_id}, Year: {year}")
             
             # Store in cache
@@ -75,7 +81,7 @@ class SeriesProcessor(MediaProcessor):
         # Store negative result in cache
         self.series_tmdb_cache[cache_key] = (None, year)
         return None, year
-    
+        
     def process(self, file_path):
         """Process a TV series file"""
         filename = os.path.basename(file_path)
