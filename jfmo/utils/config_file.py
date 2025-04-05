@@ -7,8 +7,6 @@ Configuration file handling for JFMO
 
 import os
 import json
-import configparser
-from pathlib import Path
 from ..config import Config
 from .colors import Colors
 from .logger import Logger

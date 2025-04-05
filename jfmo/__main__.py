@@ -36,29 +36,29 @@ def process_files():
             
             OutputFormatter.print_file_processing_header(filename)
             
-            # Verificación de patrones más estricta para series
+            # Stricter pattern verification for series
             is_series = False
             
-            # Primero verificar patrones definitivos de series
-            # Patrón SxxExx o S01.E01 o NxNN
+            # First check definitive series patterns
+            # SxxExx or S01.E01 or NxNN patterns
             if re.search(r'S[0-9]{1,2}\.?E[0-9]{1,2}', filename, re.IGNORECASE) or \
                re.search(r'[0-9]{1,2}x[0-9]{1,2}', filename, re.IGNORECASE):
                 is_series = True
             
-            # Patrones que podrían ser confusos
+            # Potentially confusing patterns
             elif re.search(r'Episode\s*[0-9]{1,2}', filename, re.IGNORECASE):
-                # Para "Episode N", solo tratar como serie si menciona un show conocido
+                # For "Episode N", only treat as series if it mentions a known show
                 is_series = any(series in filename for series in [
                     'Loki', 'Mandalorian', 'Walking Dead', 'Doctor Who', 'Game of Thrones'
                 ])
             
-            # Excluir patrones específicos de películas
-            # Películas conocidas
+            # Exclude specific movie patterns
+            # Known movies
             known_movies = ['2001', 'Interstellar', 'Ocean', 'Matrix', 'Avatar', 'Inception',
                           'Pulp Fiction', 'Dune', 'Oppenheimer']
             is_known_movie = any(movie.lower() in filename.lower() for movie in known_movies)
             
-            # Si es un número de 4 dígitos al inicio, tratar como serie (como 1923, 1883)
+            # If it's a 4-digit number at the beginning, treat as series (like 1923, 1883)
             if re.match(r'^[12][0-9]{3}\.S[0-9]{1,2}', filename):
                 is_series = True
                 is_known_movie = False
@@ -79,7 +79,7 @@ def process_files():
                     else:
                         stats['error'] += 1
                 else:
-                    # Si parece serie pero no se pudo detectar patrón, tratar como película
+                    # If it looks like a series but pattern couldn't be detected, treat as movie
                     OutputFormatter.print_file_processing_info("Detected", "Movie (fallback from failed series detection)")
                     result = movie_processor.process(file_path)
                     if result:

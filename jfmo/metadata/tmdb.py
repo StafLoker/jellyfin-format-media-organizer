@@ -5,9 +5,7 @@
 TMDB (The Movie Database) integration for JFMO
 """
 
-import os
 import requests
-import json
 from typing import Dict, List, Optional, Tuple, Any
 from ..config import Config
 from ..utils import Logger, Colors

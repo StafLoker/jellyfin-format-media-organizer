@@ -289,6 +289,40 @@ TMDB Integration Options:
 
 JFMO includes a development script to set up a test environment for easy testing and development.
 
+
+### Project Structure
+
+```
+jfmo/
+├── __init__.py                # Package initialization and version
+├── __main__.py                # Main entry point
+├── cli.py                     # Command-line interface
+├── config.py                  # Configuration handler
+├── detectors/                 # Media detection modules
+│   ├── __init__.py
+│   ├── quality.py             # Quality detection
+│   ├── season_episode.py      # TV show season/episode detection
+│   └── year.py                # Year detection
+├── metadata/                  # Metadata providers
+│   ├── __init__.py
+│   └── tmdb.py                # TMDB integration
+├── processors/                # Media processors
+│   ├── __init__.py
+│   ├── media_processor.py     # Base processor class
+│   ├── movie_processor.py     # Movie processing
+│   ├── series_processor.py    # TV series processing
+│   └── directory_processor.py # Directory processing
+└── utils/                     # Utility modules
+    ├── __init__.py
+    ├── colors.py              # Terminal colors
+    ├── config_file.py         # Config file handling
+    ├── file_ops.py            # File operations
+    ├── interactive_ui.py      # Interactive UI
+    ├── logger.py              # Logging
+    ├── output_formatter.py    # Output formatting
+    └── transliteration.py     # Transliteration support
+```
+
 ### Setting up a Test Environment
 
 ```bash

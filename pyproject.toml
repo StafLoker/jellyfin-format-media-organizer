@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.6"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "StafLoker", email = "dev.stafloker@gmail.com"},
 ]
 keywords = ["jellyfin", "media", "organizer", "tmdb", "transliteration"]
 classifiers = [

@@ -10,7 +10,6 @@ import re
 from ..config import Config
 from ..utils import FileOps, Colors, Logger, Transliterator
 from ..utils.output_formatter import OutputFormatter
-from ..utils.interactive_ui import InteractiveUI
 from ..detectors import SeasonEpisodeDetector, YearDetector, QualityDetector
 from ..metadata import TMDBClient
 from .series_processor import SeriesProcessor

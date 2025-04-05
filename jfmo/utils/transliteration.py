@@ -46,13 +46,13 @@ class Transliterator:
         # Clean the text by removing unnecessary symbols
         cleaned_text = text.strip()
         
-        # Palabras específicas rusas transliteradas - más estricto que antes
+        # Specific transliterated Russian indicators
         russian_indicators = [
             'podslushano', 'rybinske', 'vypusk', 'kvartirnyj', 'vopros', 
             'tainstvennye', 'istorii'
         ]
         
-        # Palabras en inglés comunes que NO deben ser consideradas como indicadores
+        # Common English words that should NOT be considered as indicators
         english_common = [
             'the', 'and', 'doctor', 'who', 'christmas', 'special', 'episode',
             'season', 'part', 'show', 'series', 'movie', 'film', 'documentary',
@@ -60,20 +60,20 @@ class Transliterator:
             'succession', 'loki', 'mandalorian', 'stranger', 'things', 'daily'
         ]
         
-        # Verificar si el texto contiene palabras inglesas comunes
+        # Check if the text contains common English words
         words = cleaned_text.lower().split()
         
-        # Si no hay palabras, devolver el texto original
+        # If no words, return the original text
         if not words:
             return text
             
         common_english_word_count = sum(1 for word in words if word in english_common)
         
-        # Si hay muchas palabras inglesas comunes, no es ruso
+        # If there are many common English words, it's not Russian
         if common_english_word_count > 0 and common_english_word_count / len(words) > 0.2:
             return text
         
-        # Verificar indicadores específicos de ruso
+        # Check for specific Russian indicators
         specific_russian_indicators = [word for word in words if word in russian_indicators]
         might_be_russian = len(specific_russian_indicators) > 0
         
@@ -83,7 +83,7 @@ class Transliterator:
             if might_be_russian:
                 try:
                     translit_result = transliterate.translit(cleaned_text, 'ru', reversed=True)
-                    # Verificar si la transliteración realmente cambió algo sustancial
+                    # Check if transliteration actually changed something substantial
                     if translit_result != cleaned_text:
                         print(f"{Colors.YELLOW}Transliterated from Russian:{Colors.NC} {cleaned_text} → {translit_result}")
                         Logger.info(f"Transliterated from Russian: {cleaned_text} → {translit_result}")
@@ -91,10 +91,10 @@ class Transliterator:
                 except Exception:
                     pass
                     
-            # Si no es ruso pero el título no parece inglés (pocos indicadores ingleses), probar otros idiomas
+            # If not Russian but title doesn't seem English (few English indicators), try other languages
             if common_english_word_count / len(words) < 0.2:
                 for lang in Config.TRANSLITERATION_LANGS:
-                    if lang == 'ru':  # Ya lo intentamos con ruso
+                    if lang == 'ru':  # Already tried Russian
                         continue
                     try:
                         # Check if this text can be reverse transliterated to this language
@@ -104,7 +104,7 @@ class Transliterator:
                             if len(cleaned_text) > 3:  # More than 3 chars
                                 try:
                                     translit_result = transliterate.translit(cleaned_text, lang, reversed=True)
-                                    if translit_result != cleaned_text:  # Solo si hay cambio real
+                                    if translit_result != cleaned_text:  # Only if there's a real change
                                         print(f"{Colors.YELLOW}Transliterated from '{lang}':{Colors.NC} {cleaned_text} → {translit_result}")
                                         Logger.info(f"Transliterated from '{lang}': {cleaned_text} → {translit_result}")
                                         return translit_result

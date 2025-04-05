@@ -7,7 +7,7 @@ Interactive UI module for JFMO
 
 import sys
 import os
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 
 from .colors import Colors
 from .output_formatter import OutputFormatter

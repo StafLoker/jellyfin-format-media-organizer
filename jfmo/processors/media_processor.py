@@ -5,8 +5,7 @@
 Base media processor class for JFMO
 """
 
-import os
-from ..utils import FileOps, Transliterator, Logger
+from ..utils import FileOps, Transliterator
 from ..detectors import YearDetector, QualityDetector
 
 
