@@ -95,7 +95,7 @@ def process_files():
                 OutputFormatter.print_file_processing_info("Action", "Skip")
                 OutputFormatter.print_file_processing_info("Reason", f"Ambiguous pattern: {skip_reason}")
                 OutputFormatter.print_file_processing_result(
-                    success=True,
+                    success=None,  # Use None instead of True to indicate a skip
                     message="File skipped due to ambiguous pattern",
                     details={"File": file_path}
                 )

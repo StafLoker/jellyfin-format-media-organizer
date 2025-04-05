@@ -90,7 +90,7 @@ class OutputFormatter:
     
     @classmethod
     def print_file_processing_result(cls, 
-                                   success: bool, 
+                                   success: Optional[bool], 
                                    message: str, 
                                    details: Optional[Dict[str, str]] = None, 
                                    indentation: int = 2):
@@ -98,16 +98,18 @@ class OutputFormatter:
         Print file processing result
         
         Args:
-            success (bool): Whether the operation was successful
+            success (bool or None): Whether the operation was successful, None for skipped
             message (str): Message to display
             details (dict, optional): Additional details to display
             indentation (int): Number of spaces to indent
         """
         indent = " " * indentation
-        if success:
+        if success is True:
             status = f"{Colors.GREEN}✅ SUCCESS:{Colors.NC}"
-        else:
+        elif success is False:
             status = f"{Colors.RED}❌ ERROR:{Colors.NC}"
+        else:  # success is None, indicates a skip
+            status = f"{Colors.YELLOW}⏩ SKIPPED:{Colors.NC}"
             
         print(f"{indent}{status} {message}")
         
