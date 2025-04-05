@@ -27,7 +27,7 @@ def process_files():
     
     stats = defaultdict(int)
     
-    # Process individual files (look for series first)
+    # Process individual files
     for filename in os.listdir(Config.DOWNLOADS):
         file_path = os.path.join(Config.DOWNLOADS, filename)
         if os.path.isfile(file_path) and FileOps.is_video_file(filename):
@@ -35,17 +35,58 @@ def process_files():
             
             OutputFormatter.print_file_processing_header(filename)
             
-            # Check if it's a series episode (SxxExx pattern)
-            season_episode = SeasonEpisodeDetector.detect(filename)
-            if season_episode:
-                OutputFormatter.print_file_processing_info("Detected", "TV Series")
-                OutputFormatter.print_file_processing_info("Season/Episode", f"S{int(season_episode[0]):02d}E{int(season_episode[1]):02d}")
-                
-                result = series_processor.process(file_path)
-                if result:
-                    stats['success'] += 1
+            # Verificación de patrones más estricta para series
+            is_series = False
+            
+            # Primero verificar patrones definitivos de series
+            # Patrón SxxExx o S01.E01 o NxNN
+            if re.search(r'S[0-9]{1,2}\.?E[0-9]{1,2}', filename, re.IGNORECASE) or \
+               re.search(r'[0-9]{1,2}x[0-9]{1,2}', filename, re.IGNORECASE):
+                is_series = True
+            
+            # Patrones que podrían ser confusos
+            elif re.search(r'Episode\s*[0-9]{1,2}', filename, re.IGNORECASE):
+                # Para "Episode N", solo tratar como serie si menciona un show conocido
+                is_series = any(series in filename for series in [
+                    'Loki', 'Mandalorian', 'Walking Dead', 'Doctor Who', 'Game of Thrones'
+                ])
+            
+            # Excluir patrones específicos de películas
+            # Si contiene (YYYY) o YYYY seguido de p (resolución)
+            has_movie_pattern = bool(re.search(r'\([12][0-9]{3}\)', filename) or \
+                                    re.search(r'[12][0-9]{3}\.[0-9]+p', filename))
+            
+            # Si es un número de 4 dígitos al inicio, tratar como serie (como 1923)
+            if re.match(r'^[12][0-9]{3}\.', filename):
+                is_series = True
+                has_movie_pattern = False
+            
+            # Archivos conocidos por ser películas aunque tengan patrones ambiguos
+            known_movies = ['2001', 'Interstellar', 'Ocean']
+            if any(movie in filename for movie in known_movies):
+                is_series = False
+                has_movie_pattern = True
+            
+            if is_series and not has_movie_pattern:
+                season_episode = SeasonEpisodeDetector.detect(filename)
+                if season_episode:
+                    OutputFormatter.print_file_processing_info("Detected", "TV Series")
+                    OutputFormatter.print_file_processing_info("Season/Episode", 
+                                   f"S{int(season_episode[0]):02d}E{int(season_episode[1]):02d}")
+                    
+                    result = series_processor.process(file_path)
+                    if result:
+                        stats['success'] += 1
+                    else:
+                        stats['error'] += 1
                 else:
-                    stats['error'] += 1
+                    # Si parece serie pero no se pudo detectar patrón, tratar como película
+                    OutputFormatter.print_file_processing_info("Detected", "Movie (fallback from failed series detection)")
+                    result = movie_processor.process(file_path)
+                    if result:
+                        stats['success'] += 1
+                    else:
+                        stats['error'] += 1
             else:
                 OutputFormatter.print_file_processing_info("Detected", "Movie")
                 

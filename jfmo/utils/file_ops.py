@@ -34,10 +34,13 @@ class FileOps:
         # Remove alternative titles in parentheses
         name = re.sub(r' ?\([^)]+\)', '', name)
         
-        # Remove season and episode patterns
-        name = re.sub(r'S[0-9]{1,2}E[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
+        # Remove season and episode patterns - ampliado para incluir más patrones
+        name = re.sub(r'S[0-9]{1,2}\.?E[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
+        name = re.sub(r'S[0-9]{1,2}\s*\.\s*E[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
         name = re.sub(r'Season\s*[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
         name = re.sub(r'[0-9]{1,2}x[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
+        name = re.sub(r'Episode\s*[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
+        name = re.sub(r'E[0-9]{1,2}.*', '', name, flags=re.IGNORECASE)
         
         # Remove date patterns (YYYY.MM.DD or YYYY-MM-DD)
         name = re.sub(r'(19|20)[0-9]{2}[.\-][0-9]{1,2}[.\-][0-9]{1,2}', '', name)
@@ -50,8 +53,8 @@ class FileOps:
         name = re.sub(r'\b(480|720|1080|2160|4320)p\b', '', name, flags=re.IGNORECASE)
         name = re.sub(r'\b(WEB|WEB-DL|WEBDL|HDR|SDR|BDRip|BluRay|x264|x265|HEVC|H264|H265)\b.*', '', name, flags=re.IGNORECASE)
         
-        # Remove year at the end
-        name = re.sub(r'\b(19|20)[0-9]{2}\b', '', name)
+        # Remove year at the end if no es un título que sea un año
+        name = re.sub(r'\s+(19|20)[0-9]{2}\b', '', name)
         
         return name.strip()
 

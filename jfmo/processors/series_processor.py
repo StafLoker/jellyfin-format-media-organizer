@@ -97,17 +97,39 @@ class SeriesProcessor(MediaProcessor):
         
         season_num, episode_num = season_episode
         
+        # Verificar si el nombre del archivo comienza con 4 dígitos (como 1923.S01E02.720p.mkv)
+        # Si es así, debemos preservar esos dígitos como el título de la serie
+        numeric_series_match = re.match(r'^([12][0-9]{3})\.', filename)
+        numeric_series_name = None
+        if numeric_series_match:
+            numeric_series_name = numeric_series_match.group(1)
+            OutputFormatter.print_file_processing_info("Detected Numeric Series", numeric_series_name)
+        
         # Get a clean name without all the metadata
         clean_title = self.get_clean_title(filename)
         
+        # Si detectamos una serie con nombre numérico pero la limpieza lo eliminó, restaurarlo
+        if numeric_series_name and not clean_title.strip():
+            clean_title = numeric_series_name
+            
         # Extract series name - do a more thorough cleaning
         series_name = clean_title
         # Remove any remaining season/episode patterns
         series_name = re.sub(r'S[0-9]{1,2}E[0-9]{1,2}.*$', '', series_name, flags=re.IGNORECASE).strip()
         series_name = re.sub(r'[0-9]{1,2}x[0-9]{1,2}.*$', '', series_name, flags=re.IGNORECASE).strip()
         series_name = re.sub(r'Season\s*[0-9]{1,2}.*$', '', series_name, flags=re.IGNORECASE).strip()
-        # Remove any years that might still be part of the title
-        series_name = re.sub(r'\b(19|20)[0-9]{2}\b', '', series_name).strip()
+        
+        # Si aún así el nombre quedó vacío pero teníamos un nombre numérico, restaurarlo
+        if not series_name.strip() and numeric_series_name:
+            series_name = numeric_series_name
+        
+        # No eliminar años si el título de la serie es el año mismo
+        if not series_name.strip() or (numeric_series_name and series_name.strip() == numeric_series_name):
+            # No eliminar el año si es el nombre de la serie
+            pass
+        else:
+            # Remove any years that might still be part of the title
+            series_name = re.sub(r'\b(19|20)[0-9]{2}\b', '', series_name).strip()
         
         OutputFormatter.print_file_processing_info("Series", series_name)
         OutputFormatter.print_file_processing_info("Season/Episode", f"S{int(season_num):02d}E{episode_num}")
@@ -142,9 +164,10 @@ class SeriesProcessor(MediaProcessor):
         tmdb_id, year = tmdb_id_info if tmdb_id_info else (None, year)
         
         # Special check for series named with year-like numbers (like "1923")
-        if series_name == year:
-            # If series name is the same as detected year, don't use the year suffix
-            year = ""
+        if numeric_series_name and series_name == numeric_series_name:
+            # Para series con nombre numérico, solo usar año si es diferente del nombre
+            if year == series_name:
+                year = ""
         
         # Format season number with leading zeros
         season_num = f"{int(season_num):02d}"
@@ -154,12 +177,12 @@ class SeriesProcessor(MediaProcessor):
         
         # Create series name with TMDB ID if available
         if tmdb_id:
-            if year:
+            if year and year != series_name:  # No añadir año si es igual al nombre de la serie
                 series_dir_name = f"{series_name} ({year}) [tmdbid-{tmdb_id}]"
             else:
                 series_dir_name = f"{series_name} [tmdbid-{tmdb_id}]"
         else:
-            if year:
+            if year and year != series_name:  # No añadir año si es igual al nombre de la serie
                 series_dir_name = f"{series_name} ({year})"
             else:
                 series_dir_name = series_name
