@@ -86,6 +86,20 @@ class SeriesProcessor(MediaProcessor):
         season_episode = SeasonEpisodeDetector.detect(filename)
         
         if not season_episode:
+            # Try with additional patterns for multi-episodes and SxE format
+            # This is a fallback in case the detector didn't catch these patterns
+            if re.search(r'S[0-9]{1,2}E[0-9]{1,2}-E?[0-9]{1,2}', filename, re.IGNORECASE):
+                # Extract season and first episode from multi-episode format
+                match = re.search(r'S([0-9]{1,2})E([0-9]{1,2})-', filename, re.IGNORECASE)
+                if match:
+                    season_episode = (match.group(1), match.group(2))
+            elif re.search(r'[0-9]{1,2}[xX][0-9]{1,2}', filename):
+                # Extract season and episode from SxE format
+                match = re.search(r'([0-9]{1,2})[xX]([0-9]{1,2})', filename)
+                if match:
+                    season_episode = (match.group(1), match.group(2))
+        
+        if not season_episode:
             error_message = f"Could not detect series pattern for: {filename}"
             Logger.error(error_message)
             OutputFormatter.print_file_processing_result(

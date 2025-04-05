@@ -18,6 +18,59 @@ from .processors import MovieProcessor, SeriesProcessor, DirectoryProcessor
 from .cli import parse_args, check_root, check_dependencies, handle_config_options, update_config_from_args
 
 
+def should_skip_file(filename):
+    """
+    Check if a file should be skipped based on suspicious patterns
+    
+    Args:
+        filename (str): The filename to check
+        
+    Returns:
+        tuple: (should_skip, reason) whether to skip and why
+    """
+    # Standard series patterns that should NOT be skipped
+    standard_series_patterns = [
+        # Standard SxxExx pattern - these should be processed normally as series
+        r'S[0-9]{1,2}E[0-9]{1,2}',
+        # Dotted pattern S01.E01
+        r'S[0-9]{1,2}\.E[0-9]{1,2}',
+        # Lowercase sXXeXX pattern
+        r'\bs[0-9]{1,2}e[0-9]{1,2}\b',
+        # Multi-episode format (now allowed)
+        r'S[0-9]{1,2}E[0-9]{1,2}-E?[0-9]{1,2}',
+        # Season x Episode format (now allowed)
+        r'[0-9]{1,2}[xX][0-9]{1,2}'
+    ]
+    
+    # If it matches a standard series pattern, don't skip it
+    for pattern in standard_series_patterns:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return False, ""
+    
+    # Suspicious patterns that should be skipped
+    suspicious_patterns = [
+        # Shows with episode markers but might be missed by standard detectors
+        (r'[Ee]pisode[. ]([0-9]{1,2})', "Contains 'Episode X' pattern"),
+        (r'\b([0-9]{1})([0-9]{2})\b', "Potential season/episode number (NNN format)"),
+        # Date-based TV shows
+        (r'(19|20)[0-9]{2}[.-][0-9]{2}[.-][0-9]{2}', "Date-based TV show format"),
+        # Non-standard episode numbering in Russian content
+        (r'[Ee][0-9]{2}.*[0-9]{4}', "Non-standard episode numbering")
+    ]
+    
+    # Check if any suspicious pattern is found
+    for pattern, reason in suspicious_patterns:
+        if re.search(pattern, filename, re.IGNORECASE):
+            # Check for specific exceptions (valid movies with similar patterns)
+            if pattern == r'\b([0-9]{1})([0-9]{2})\b':
+                # Don't skip if it's a movie with a year and quality pattern
+                if re.search(r'(19|20)[0-9]{2}.*\b(720|1080|2160)p\b', filename, re.IGNORECASE):
+                    continue
+            
+            return True, reason
+    
+    return False, ""
+
 def process_files():
     """Process individual media files"""
     Logger.info("Starting processing of individual files")
@@ -36,13 +89,47 @@ def process_files():
             
             OutputFormatter.print_file_processing_header(filename)
             
+            # Check if file should be skipped due to ambiguous patterns
+            should_skip, skip_reason = should_skip_file(filename)
+            if should_skip:
+                OutputFormatter.print_file_processing_info("Action", "Skip")
+                OutputFormatter.print_file_processing_info("Reason", f"Ambiguous pattern: {skip_reason}")
+                OutputFormatter.print_file_processing_result(
+                    success=True,
+                    message="File skipped due to ambiguous pattern",
+                    details={"File": file_path}
+                )
+                stats['skipped'] += 1
+                continue
+            
+            # Process by standard patterns first - very strong indicators
+            # Pattern SxxExx definitely indicates a TV series
+            if re.search(r'S[0-9]{1,2}E[0-9]{1,2}', filename, re.IGNORECASE) or \
+               re.search(r'S[0-9]{1,2}\.E[0-9]{1,2}', filename, re.IGNORECASE) or \
+               re.search(r'\bs[0-9]{1,2}e[0-9]{1,2}\b', filename) or \
+               re.search(r'S[0-9]{1,2}E[0-9]{1,2}-E?[0-9]{1,2}', filename, re.IGNORECASE) or \
+               re.search(r'[0-9]{1,2}[xX][0-9]{1,2}', filename):
+                OutputFormatter.print_file_processing_info("Detected", "TV Series")
+                season_episode = SeasonEpisodeDetector.detect(filename)
+                if season_episode:
+                    OutputFormatter.print_file_processing_info("Season/Episode", 
+                               f"S{int(season_episode[0]):02d}E{int(season_episode[1]):02d}")
+                    
+                    result = series_processor.process(file_path)
+                    if result:
+                        stats['success'] += 1
+                    else:
+                        stats['error'] += 1
+                    continue
+            
             # Stricter pattern verification for series
             is_series = False
             
             # First check definitive series patterns
             # SxxExx or S01.E01 or NxNN patterns
             if re.search(r'S[0-9]{1,2}\.?E[0-9]{1,2}', filename, re.IGNORECASE) or \
-               re.search(r'[0-9]{1,2}x[0-9]{1,2}', filename, re.IGNORECASE):
+               re.search(r'[0-9]{1,2}x[0-9]{1,2}', filename, re.IGNORECASE) or \
+               re.search(r'S[0-9]{1,2}E[0-9]{1,2}-E?[0-9]{1,2}', filename, re.IGNORECASE):
                 is_series = True
             
             # Potentially confusing patterns
@@ -52,11 +139,10 @@ def process_files():
                     'Loki', 'Mandalorian', 'Walking Dead', 'Doctor Who', 'Game of Thrones'
                 ])
             
-            # Exclude specific movie patterns
-            # Known movies
-            known_movies = ['2001', 'Interstellar', 'Ocean', 'Matrix', 'Avatar', 'Inception',
-                          'Pulp Fiction', 'Dune', 'Oppenheimer']
-            is_known_movie = any(movie.lower() in filename.lower() for movie in known_movies)
+            # Detect using more robust patterns instead of a predefined list
+            # Check if it looks like a typical movie (year followed by quality)
+            movie_pattern = re.search(r'(19|20)[0-9]{2}.*\b(720p|1080p|2160p|HDR|BluRay)\b', filename, re.IGNORECASE)
+            is_known_movie = bool(movie_pattern)
             
             # If it's a 4-digit number at the beginning, treat as series (like 1923, 1883)
             if re.match(r'^[12][0-9]{3}\.S[0-9]{1,2}', filename):
