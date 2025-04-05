@@ -168,7 +168,7 @@ This directory contains a comprehensive test environment for JFMO development wi
 
 To test JFMO with this environment:
 
-```bash
+\`\`\`bash
 # Run in test mode (no actual changes, verbose output by default)
 python3 -m jfmo --config $(pwd)/$CONFIG_FILE --test
 
@@ -180,7 +180,7 @@ python3 -m jfmo --config $(pwd)/$CONFIG_FILE --semi-interactive --verbose
 
 # Run without interactive mode
 python3 -m jfmo --config $(pwd)/$CONFIG_FILE --non-interactive --verbose
-```
+\`\`\`
 
 ## Expected Behavior
 
