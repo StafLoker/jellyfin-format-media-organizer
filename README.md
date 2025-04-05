@@ -88,7 +88,7 @@ If you prefer to install JFMO globally:
 ```bash
 git clone https://github.com/StafLoker/jellyfin-format-media-organizer.git
 cd jellyfin-format-media-organizer
-pip install .
+pip3 install .
 ```
 
 ## Using JFMO with Root Permissions
@@ -345,10 +345,10 @@ The test script will output commands to run JFMO with the test environment:
 
 ```bash
 # Run in test mode (no actual changes)
-python -m jfmo --config ./test_environment/config/jfmo_test_config.json --test
+python3 -m jfmo --config ./test_environment/config/jfmo_test_config.json --test
 
 # Run with actual changes
-python -m jfmo --config ./test_environment/config/jfmo_test_config.json
+python3 -m jfmo --config ./test_environment/config/jfmo_test_config.json
 ```
 
 Since the test environment uses your current user, you don't need to use `sudo` for testing.
