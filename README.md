@@ -116,39 +116,64 @@ JFMO features an interactive mode that helps you manually select the correct mat
    - Title and year
    - TMDB ID
    - A brief overview (if available)
+   - Popularity score
 3. You can:
    - Select a match by number
+   - Press Enter to select the recommended option
    - Skip the file (leave it untouched)
    - Quit the program
+
+### Smart Selection
+
+JFMO now features smarter selection algorithms that:
+1. Prioritize exact title matches
+2. Prioritize exact year matches
+3. Consider popularity scores
+4. Automatically select the best match when one is clearly superior
+
+### Interactive Modes
+
+JFMO offers three different interactive modes:
+
+1. **Full Interactive Mode** (default): Shows selection options whenever multiple matches are found
+2. **Semi-Interactive Mode** (`--semi-interactive`): Only shows selection options for truly ambiguous cases
+3. **Non-Interactive Mode** (`--non-interactive`): Always selects the best match automatically
+
+### Enabling/Disabling Interactive Mode
+
+Interactive mode settings can be controlled in several ways:
+
+1. **Command line**:
+   - `--non-interactive` flag disables it completely
+   - `--semi-interactive` flag enables smart selection
+2. **Configuration file**:
+   - Set `"interactive": false` to disable completely
+   - Set `"semi_interactive": true` for smart selection
+3. **Test mode**: Interactive mode still works during test runs
 
 ### Example Interactive Selection
 
 ```
 ============================================================
-Multiple TV Show matches found for:
-Original file: The.Office.S01E01.1080p.mkv
-Search query: The Office
+MULTIPLE MOVIE MATCHES FOUND
+🔍 Original File: The.Matrix.1999.1080p.mkv
+🔍 Search Query: The Matrix
 ============================================================
-[1] The Office (2005) [tmdbid-2316]
-    Overview: A mockumentary on a group of typical office workers...
-[2] The Office (2001) [tmdbid-1084]
-    Overview: The story of an office that faces closure when...
-[3] The Office (2019) [tmdbid-86328]
-    Overview: Working in an office environment can be challenging...
+[1] (Recommend) The Matrix (1999) [tmdbid-603]
+    Overview: Set in the 22nd century, The Matrix tells the story of a computer hacker who joins a group of underg...
+    Popularity: 84.2
+[2] Making 'The Matrix' (1999) [tmdbid-684431]
+    Overview: A promotional making-of documentary for the film Matrix, The (1999) that devotes its time to explain...
+    Popularity: 6.3
+[3] The Matrix: What Is Bullet-Time? (1999) [tmdbid-684428]
+    Overview: Special Effects wizard John Gaeta demonstrates how the "Bullet-Time" effects were created for the fi...
+    Popularity: 2.1
 ------------------------------------------------------------
 [s] Skip (leave file untouched)
 [q] Quit
 ------------------------------------------------------------
 Please select an option [1-3, s, q]: 
 ```
-
-### Enabling/Disabling Interactive Mode
-
-Interactive mode is enabled by default, but can be controlled in several ways:
-
-1. **Command line**: `--non-interactive` flag disables it
-2. **Configuration file**: Set `"interactive": false` in the "options" section
-3. **Test mode**: Interactive mode is automatically disabled during test runs
 
 ## Configuration
 
@@ -186,10 +211,11 @@ Edit the generated file to match your environment:
     },
     "logging": {
         "log_file": "/tmp/jfmo.log",
-        "verbose": true
+        "verbose": false
     },
     "options": {
-        "interactive": true
+        "interactive": true,
+        "semi_interactive": false
     }
 }
 ```
@@ -261,9 +287,13 @@ Usage: jfmo [OPTIONS]
 Options:
   --version               Show version and exit
   --test                  Run in test mode (no actual changes made)
+  --verbose               Show detailed log messages (default in test mode)
   --quiet                 Suppress log messages
-  --non-interactive       Disable interactive mode
   -h, --help              Show this help message
+
+Interactive Mode Options:
+  --non-interactive       Disable interactive mode (automatic selection of best match)
+  --semi-interactive      Only show interactive prompts for truly ambiguous matches
 
 Configuration File Options:
   --config FILE           Path to configuration file
