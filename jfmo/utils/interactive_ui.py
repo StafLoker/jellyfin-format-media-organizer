@@ -83,7 +83,7 @@ class InteractiveUI:
             # Highlight the recommended option (first one)
             prefix = f"{Colors.GREEN}[{i}]{Colors.NC}"
             if i == 1:
-                prefix = f"{Colors.GREEN}[{i}] (Recomendado){Colors.NC}"
+                prefix = f"{Colors.GREEN}[{i}] (Recommend){Colors.NC}"
                 
             print(f"{prefix} {title_text} ({year_text}) [tmdbid-{id_text}]")
             
@@ -96,7 +96,7 @@ class InteractiveUI:
                 print(f"    {Colors.BLUE}Overview:{Colors.NC} {overview}")
                 
             # Print popularity score for additional context
-            print(f"    {Colors.BLUE}Popularidad:{Colors.NC} {popularity:.1f}")
+            print(f"    {Colors.BLUE}Popularity:{Colors.NC} {popularity:.1f}")
                 
         # Print navigation options
         print(OutputFormatter.SECTION_DIVIDER)

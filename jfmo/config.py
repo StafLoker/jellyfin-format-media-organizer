@@ -29,7 +29,7 @@ class Config:
     
     # Runtime options
     TEST_MODE = False
-    VERBOSE = True
+    VERBOSE = False
     INTERACTIVE_MODE = True  # Enable interactive mode by default
     SEMI_INTERACTIVE_MODE = False  # Only show interactive prompt for truly ambiguous cases
     

@@ -28,14 +28,15 @@ class ConfigFileHandler:
         },
         "tmdb": {
             "api_key": "",
-            "enabled": True
+            "enabled": False
         },
         "logging": {
             "log_file": "/tmp/jfmo.log",
-            "verbose": True
+            "verbose": False
         },
         "options": {
-            "interactive": True
+            "interactive": True,
+            "semi_interactive": False
         }
     }
     
@@ -149,13 +150,15 @@ class ConfigFileHandler:
                 options = config_data['options']
                 if 'interactive' in options:
                     Config.INTERACTIVE_MODE = options['interactive']
+                if 'semi_interactive' in options:
+                    Config.SEMI_INTERACTIVE_MODE = options['semi_interactive']
             
             return True
         except Exception as e:
             print(f"{Colors.RED}✗ Failed to apply configuration: {str(e)}{Colors.NC}")
             Logger.error(f"Failed to apply configuration: {str(e)}")
             return False
-    
+            
     @classmethod
     def get_default_config_path(cls):
         """Get the default configuration file path"""

@@ -26,8 +26,12 @@ def parse_args():
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--test", action="store_true", 
                         help="Run in test mode (no actual file changes)")
-    parser.add_argument("--quiet", action="store_true",
+                        
+    output_group = parser.add_mutually_exclusive_group()
+    output_group.add_argument("--quiet", action="store_true",
                         help="Suppress log messages (except errors)")
+    output_group.add_argument("--verbose", action="store_true",
+                        help="Show detailed log messages (default in test mode)")
                         
     # Interactive mode options (mutually exclusive)
     interactive_group = parser.add_mutually_exclusive_group()
@@ -87,7 +91,14 @@ def update_config_from_args(args):
     """Update configuration from command line arguments (overriding any config file)"""
     # Update Test Mode
     Config.TEST_MODE = args.test
-    Config.VERBOSE = not args.quiet
+    
+    # Update verbose mode based on test mode and explicit settings
+    if args.quiet:
+        Config.VERBOSE = False
+    elif args.verbose:
+        Config.VERBOSE = True
+    else:
+        Config.VERBOSE = args.test
     
     # Update interactive mode settings
     if args.non_interactive:

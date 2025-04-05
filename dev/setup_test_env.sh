@@ -47,14 +47,15 @@ cat > "$CONFIG_FILE" << EOL
     },
     "tmdb": {
         "api_key": "",
-        "enabled": true
+        "enabled": false
     },
     "logging": {
         "log_file": "$(pwd)/$TEST_DIR/jfmo.log",
-        "verbose": true
+        "verbose": false
     },
     "options": {
-        "interactive": true
+        "interactive": true,
+        "semi_interactive": false
     }
 }
 EOL
@@ -167,16 +168,19 @@ This directory contains a comprehensive test environment for JFMO development wi
 
 To test JFMO with this environment:
 
-\`\`\`bash
-# Run in test mode (no actual changes)
+```bash
+# Run in test mode (no actual changes, verbose output by default)
 python3 -m jfmo --config $(pwd)/$CONFIG_FILE --test
 
 # Run with interactive mode (recommended for testing problematic patterns)
-python3 -m jfmo --config $(pwd)/$CONFIG_FILE
+python3 -m jfmo --config $(pwd)/$CONFIG_FILE --verbose
+
+# Run with semi-interactive mode (only prompting for truly ambiguous cases)
+python3 -m jfmo --config $(pwd)/$CONFIG_FILE --semi-interactive --verbose
 
 # Run without interactive mode
-python3 -m jfmo --config $(pwd)/$CONFIG_FILE --non-interactive
-\`\`\`
+python3 -m jfmo --config $(pwd)/$CONFIG_FILE --non-interactive --verbose
+```
 
 ## Expected Behavior
 
@@ -190,13 +194,6 @@ python3 -m jfmo --config $(pwd)/$CONFIG_FILE --non-interactive
 This allows testing both the detection capabilities and the error handling of JFMO.
 EOL
 
-# Create a helpful info file in the downloads directory
-INFO_FILE="$DOWNLOADS_DIR/README.txt"
-cat > "$INFO_FILE" << EOL
-This directory contains various media files with different naming patterns to test JFMO.
-The files are deliberately mixed (movies and TV shows) to simulate a real-world downloads folder.
-EOL
-
 echo ""
 echo -e "${GREEN}✅ Realistic test environment created successfully!${NC}"
 echo ""
@@ -204,7 +201,10 @@ echo -e "${YELLOW}To test JFMO, run:${NC}"
 echo -e "${BLUE}python3 -m jfmo --config $CONFIG_FILE --test${NC}"
 echo ""
 echo -e "${YELLOW}For interactive testing:${NC}"
-echo -e "${BLUE}python3 -m jfmo --config $CONFIG_FILE${NC}"
+echo -e "${BLUE}python3 -m jfmo --config $CONFIG_FILE --verbose${NC}"
+echo ""
+echo -e "${YELLOW}For semi-interactive testing:${NC}"
+echo -e "${BLUE}python3 -m jfmo --config $CONFIG_FILE --semi-interactive --verbose${NC}"
 echo ""
 echo -e "${YELLOW}Test environment located at:${NC} $(pwd)/$TEST_DIR"
 echo -e "${YELLOW}See $(pwd)/$TEST_DIR/README.md for details on test patterns${NC}"
