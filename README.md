@@ -1,10 +1,19 @@
-# JFMO - Jellyfin Format Media Organizer
+<div align="center">
+   <img width="150" height="150" src="logo.png" alt="Logo">
+   <h1><b>Jellyfin Format Media Organizer</b></h1>
+   <p><i>~ JFMO ~</i></p>
+   <p align="center">
+      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/blob/main/LICENSE.md">License</a> ·
+      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases">Releases</a>
+   </p>
+</div>
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
-![Python](https://img.shields.io/badge/python-3.6+-green.svg)
-![License](https://img.shields.io/badge/license-MIT-yellow.svg)
+<div align="center">
+   <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases"><img src="https://img.shields.io/github/downloads/StafLoker/jellyfin-format-media-organizer/total.svg?style=flat" alt="downloads"/></a>
+   <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases"><img src="https://img.shields.io/github/release-pre/StafLoker/jellyfin-format-media-organizer.svg?style=flat" alt="latest version"/></a>
 
-JFMO is a powerful media organization tool designed to automatically structure and rename your media files according to Jellyfin's recommended naming conventions. It features automatic transliteration support for non-Latin alphabets and TMDB integration for accurate metadata.
+   <p>JFMO is a powerful media organization tool designed to automatically structure and rename your media files according to Jellyfin's recommended naming conventions. It features automatic transliteration support for non-Latin alphabets and TMDB integration for accurate metadata.</p>
+</div>
 
 ## Features
 
@@ -90,20 +99,6 @@ git clone https://github.com/StafLoker/jellyfin-format-media-organizer.git
 cd jellyfin-format-media-organizer
 pip3 install .
 ```
-
-## Using JFMO with Root Permissions
-
-Since JFMO needs to set proper file permissions, you'll need to run it with sudo when making actual changes. When installed with pipx, you can do this in two ways:
-
-```bash
-# Option 1: Use the full path to the pipx-installed executable
-sudo $(which jfmo) --config ~/.config/jfmo/config.json
-
-# Option 2: Use sudo with the Python module 
-sudo -E $(pipx environment -v | grep PIPX_SHARED_LIBS | awk -F'"' '{print $2}')/bin/python -m jfmo --config ~/.config/jfmo/config.json
-```
-
-The `-E` flag preserves environment variables including your TMDB API key if set.
 
 ## Interactive Mode
 
@@ -419,18 +414,11 @@ Since the test environment uses your current user, you don't need to use `sudo` 
 
 ## Transliteration Support
 
-JFMO automatically detects and converts Russian transliterated text back to Cyrillic script. It uses an advanced linguistic algorithm to identify potentially Russian filenames by looking for:
-
-1. Russian functional words in transliteration (v, na, ot, etc.)
-2. Phonetic patterns common in Russian (zh, shch, ya, etc.)
-3. Unusual word length and character patterns
-4. Letter frequency unusual in English but common in transliterated Russian
-5. Specific Russian terms common in media filenames
-6. Russian grammatical endings (-yj, -aya, etc.)
+JFMO automatically detects and converts Russian transliterated text back to Cyrillic script.
 
 This allows for accurate conversion of filenames like:
-- "Podslushano.v.Rybinske" → "Подслушано.в.Рыбинске"
-- "Tainstvennye.Istorii" → "Таинственные.Истории"
+- "Podslushano v Rybinske" → "Подслушано в Рыбинске"
+- "Tainstvennye Istorii" → "Таинственные Истории"
 
 ## File Naming Convention
 
