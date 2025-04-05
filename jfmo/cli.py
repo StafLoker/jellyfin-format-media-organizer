@@ -28,8 +28,13 @@ def parse_args():
                         help="Run in test mode (no actual file changes)")
     parser.add_argument("--quiet", action="store_true",
                         help="Suppress log messages (except errors)")
-    parser.add_argument("--non-interactive", action="store_true",
+                        
+    # Interactive mode options (mutually exclusive)
+    interactive_group = parser.add_mutually_exclusive_group()
+    interactive_group.add_argument("--non-interactive", action="store_true",
                         help="Disable interactive mode (automatic selection of best match)")
+    interactive_group.add_argument("--semi-interactive", action="store_true",
+                        help="Only show interactive prompts for truly ambiguous matches")
     
     # Configuration file options
     config_group = parser.add_argument_group("Configuration File Options")
@@ -83,7 +88,14 @@ def update_config_from_args(args):
     # Update Test Mode
     Config.TEST_MODE = args.test
     Config.VERBOSE = not args.quiet
-    Config.INTERACTIVE_MODE = not args.non_interactive
+    
+    # Update interactive mode settings
+    if args.non_interactive:
+        Config.INTERACTIVE_MODE = False
+        Config.SEMI_INTERACTIVE_MODE = False
+    elif args.semi_interactive:
+        Config.INTERACTIVE_MODE = True
+        Config.SEMI_INTERACTIVE_MODE = True
     
     # Update paths if provided
     if args.media_dir:

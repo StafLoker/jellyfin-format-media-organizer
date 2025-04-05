@@ -31,6 +31,7 @@ class Config:
     TEST_MODE = False
     VERBOSE = True
     INTERACTIVE_MODE = True  # Enable interactive mode by default
+    SEMI_INTERACTIVE_MODE = False  # Only show interactive prompt for truly ambiguous cases
     
     # Supported languages for transliteration
     TRANSLITERATION_LANGS = ['ru']

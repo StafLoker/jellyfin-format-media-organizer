@@ -52,7 +52,7 @@ class InteractiveUI:
         if not options:
             return None
             
-        # If only one option and it's a perfect match, return it
+        # If only one option, return it without prompting
         if len(options) == 1:
             return options[0]
             
@@ -66,7 +66,7 @@ class InteractiveUI:
         OutputFormatter.print_file_processing_info("Search Query", title, indentation=0)
         print(OutputFormatter.HORIZONTAL_DIVIDER)
         
-        # Print available options
+        # Print available options with more details
         for i, option in enumerate(options, 1):
             if media_type == "movie":
                 title_field = "title"
@@ -78,16 +78,25 @@ class InteractiveUI:
             title_text = option.get(title_field, "Unknown Title")
             year_text = option.get(date_field, "")[:4] if option.get(date_field) else "????"
             id_text = option.get("id", "")
+            popularity = option.get("popularity", 0)
             
-            print(f"{Colors.GREEN}[{i}]{Colors.NC} {title_text} ({year_text}) [tmdbid-{id_text}]")
+            # Highlight the recommended option (first one)
+            prefix = f"{Colors.GREEN}[{i}]{Colors.NC}"
+            if i == 1:
+                prefix = f"{Colors.GREEN}[{i}] (Recomendado){Colors.NC}"
+                
+            print(f"{prefix} {title_text} ({year_text}) [tmdbid-{id_text}]")
             
             # Print overview if available
             overview = option.get("overview", "")
             if overview:
                 # Truncate overview if it's too long
                 if len(overview) > 100:
-                    overview = overview[:100] + "..."
+                    overview = overview[:97] + "..."
                 print(f"    {Colors.BLUE}Overview:{Colors.NC} {overview}")
+                
+            # Print popularity score for additional context
+            print(f"    {Colors.BLUE}Popularidad:{Colors.NC} {popularity:.1f}")
                 
         # Print navigation options
         print(OutputFormatter.SECTION_DIVIDER)
@@ -104,11 +113,13 @@ class InteractiveUI:
                 sys.exit(0)
             elif choice == 's':
                 return None
+            elif choice == '':  # Empty input (just pressed Enter)
+                return options[0]  # Select the first (recommended) option
             elif choice.isdigit() and 1 <= int(choice) <= len(options):
                 return options[int(choice) - 1]
             else:
                 print(f"{Colors.RED}Invalid choice. Please try again.{Colors.NC}")
-    
+
     @classmethod
     def confirm_action(cls, message: str, default: bool = True) -> bool:
         """

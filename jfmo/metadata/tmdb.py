@@ -26,6 +26,7 @@ class TMDBClient:
         """
         self.api_key = Config.TMDB_API_KEY
         self.interactive = interactive and not Config.TEST_MODE
+        self.semi_interactive = Config.SEMI_INTERACTIVE_MODE
         
         if not self.api_key:
             print(f"{Colors.YELLOW}Warning: TMDB API key not configured. TMDB integration disabled.{Colors.NC}")
@@ -91,26 +92,48 @@ class TMDBClient:
         if not results or not results.get('results') or len(results['results']) == 0:
             return None
         
-        # If we're in interactive mode and have multiple results, ask user to select
-        if self.interactive and len(results['results']) > 1:
+        # Filter and sort results to find the best match
+        candidates = results['results']
+        
+        # If we have a year, prioritize exact year matches
+        if year:
+            exact_year_matches = [
+                movie for movie in candidates 
+                if movie.get('release_date', '').startswith(year)
+            ]
+            if exact_year_matches:
+                candidates = exact_year_matches
+        
+        # Look for exact title matches (case insensitive)
+        title_lower = title.lower()
+        exact_title_matches = [
+            movie for movie in candidates
+            if movie.get('title', '').lower() == title_lower
+        ]
+        if exact_title_matches:
+            candidates = exact_title_matches
+            
+        # Sort remaining candidates by popularity
+        candidates.sort(key=lambda x: x.get('popularity', 0), reverse=True)
+        
+        # If we have a single candidate or the top candidate is significantly more popular
+        if len(candidates) == 1 or (len(candidates) > 1 and 
+            candidates[0].get('popularity', 0) > candidates[1].get('popularity', 0) * 1.5):
+            # Return top result without interactive selection
+            return candidates[0]
+        
+        # If we have multiple good candidates with similar popularity, use interactive mode
+        if self.interactive and len(candidates) > 1:
             selected = InteractiveUI.select_media_option(
                 title=title,
-                options=results['results'],
+                options=candidates,
                 media_type="movie",
                 filename=filename
             )
             return selected
             
         # If non-interactive or user chose the first result
-        if not year and len(results['results']) > 1:
-            # Try to find an exact title match first
-            title_lower = title.lower()
-            for movie in results['results']:
-                if movie.get('title', '').lower() == title_lower:
-                    return movie
-        
-        # Return the first result
-        return results['results'][0]
+        return candidates[0]
     
     def search_tv(self, title: str, year: Optional[str] = None, filename: Optional[str] = None) -> Optional[Dict]:
         """
@@ -134,41 +157,54 @@ class TMDBClient:
             'page': 1
         }
         
-        # TMDB API doesn't support direct year filtering for TV shows
-        # We'll filter results manually after getting them
-        
         results = self._make_request('search/tv', params)
         
         if not results or not results.get('results') or len(results['results']) == 0:
             return None
         
-        # If interactive mode and multiple results, ask user to select
-        if self.interactive and len(results['results']) > 1:
+        # Filter and sort results to find the best match
+        candidates = results['results']
+        
+        # If we have a year, prioritize exact year matches
+        if year:
+            exact_year_matches = [
+                show for show in candidates 
+                if show.get('first_air_date', '').startswith(year)
+            ]
+            if exact_year_matches:
+                candidates = exact_year_matches
+        
+        # Look for exact title matches (case insensitive)
+        title_lower = title.lower()
+        exact_title_matches = [
+            show for show in candidates
+            if show.get('name', '').lower() == title_lower
+        ]
+        if exact_title_matches:
+            candidates = exact_title_matches
+            
+        # Sort remaining candidates by popularity
+        candidates.sort(key=lambda x: x.get('popularity', 0), reverse=True)
+        
+        # If we have a single candidate or the top candidate is significantly more popular
+        if len(candidates) == 1 or (len(candidates) > 1 and 
+            candidates[0].get('popularity', 0) > candidates[1].get('popularity', 0) * 1.5):
+            # Return top result without interactive selection
+            return candidates[0]
+        
+        # If we have multiple good candidates with similar popularity, use interactive mode
+        if self.interactive and len(candidates) > 1:
             selected = InteractiveUI.select_media_option(
                 title=title,
-                options=results['results'],
+                options=candidates,
                 media_type="tv",
                 filename=filename
             )
             return selected
             
-        # Non-interactive mode or single result
-        if year and len(results['results']) > 1:
-            # Try to find a show that matches the year
-            for show in results['results']:
-                first_air_date = show.get('first_air_date', '')
-                if first_air_date and first_air_date.startswith(year):
-                    return show
-            
-            # If no exact year match, try to find an exact title match
-            title_lower = title.lower()
-            for show in results['results']:
-                if show.get('name', '').lower() == title_lower:
-                    return show
-        
-        # Return the first result if no specific match found
-        return results['results'][0]
-    
+        # Return the first result if non-interactive or no clear winner
+        return candidates[0]
+
     def get_movie_details(self, movie_id: int) -> Optional[Dict]:
         """
         Get detailed information about a specific movie
