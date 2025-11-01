@@ -3,7 +3,7 @@
    <h1><b>Jellyfin Format Media Organizer</b></h1>
    <p><i>~ JFMO ~</i></p>
    <p align="center">
-      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/blob/main/LICENSE.md">License</a> ·
+      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/blob/main/LICENSE">License</a> ·
       <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases">Releases</a>
    </p>
 </div>
@@ -455,10 +455,6 @@ jfmo/
 - **Check logs**: Examine the log file for detailed operation logs
 - **Configuration file issues**: Make sure your JSON file is valid
 - **pipx issues**: Try reinstalling with `pipx uninstall jfmo` followed by `pipx install jfmo`
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 
