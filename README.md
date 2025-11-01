@@ -4,8 +4,8 @@
    <p><i>~ JFMO ~</i></p>
    <p align="center">
       <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/wiki">Docs</a> ·
-      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/blob/main/LICENSE">License</a> ·
-      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases">Releases</a>
+      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases">Releases</a> ·
+      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/blob/main/LICENSE">License</a>
    </p>
 </div>
 
