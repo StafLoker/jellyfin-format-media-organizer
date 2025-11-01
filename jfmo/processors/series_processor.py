@@ -1,19 +1,11 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Series processor for JFMO
-"""
-
 import os
 import re
 from ..config import Config
-from ..utils import FileOps, Colors, Logger, Transliterator
+from ..utils import FileOps, Logger, Transliterator
 from ..utils.output_formatter import OutputFormatter
 from ..detectors import SeasonEpisodeDetector
 from ..metadata import TMDBClient
 from .media_processor import MediaProcessor
-
 
 class SeriesProcessor(MediaProcessor):
     """Class for processing TV series files"""

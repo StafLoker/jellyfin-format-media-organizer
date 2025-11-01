@@ -1,44 +1,41 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Configuration file handling for JFMO
-"""
-
 import os
-import json
-from ..config import Config
-from .colors import Colors
-from .logger import Logger
+import yaml
+from pathlib import Path
 
 
 class ConfigFileHandler:
     """Handler for reading and writing configuration files"""
     
-    CONFIG_TEMPLATE = {
-        "directories": {
-            "media_dir": "/data/media",
-            "downloads": "/data/media/downloads",
-            "films": "/data/media/films",
-            "series": "/data/media/series"
-        },
-        "permissions": {
-            "user": "jellyfin",
-            "group": "media"
-        },
-        "tmdb": {
-            "api_key": "",
-            "enabled": False
-        },
-        "logging": {
-            "log_file": "/tmp/jfmo.log",
-            "verbose": False
-        },
-        "options": {
-            "interactive": True,
-            "semi_interactive": False
-        }
-    }
+    CONFIG_TEMPLATE = """# JFMO Configuration File
+# Jellyfin Format Media Organizer
+
+# Directory Configuration
+directories:
+  media_dir: /data/media
+  downloads: /data/media/downloads
+  films: /data/media/films
+  series: /data/media/series
+
+# File Permissions
+permissions:
+  user: jellyfin
+  group: media
+
+# TMDB Integration
+tmdb:
+  api_key: ""  # Get your API key from https://www.themoviedb.org/settings/api
+  enabled: false
+
+# Logging Configuration
+logging:
+  log_file: /tmp/jfmo.log
+  verbose: false
+
+# Processing Options
+options:
+  interactive: true  # Show interactive prompts for ambiguous matches
+  semi_interactive: false  # Only prompt for truly ambiguous cases
+"""
     
     @classmethod
     def create_template(cls, output_path):
@@ -53,22 +50,23 @@ class ConfigFileHandler:
         """
         try:
             # Ensure directory exists
-            os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+            output_file = Path(output_path)
+            output_file.parent.mkdir(parents=True, exist_ok=True)
             
             # Write the template
-            with open(output_path, 'w') as f:
-                json.dump(cls.CONFIG_TEMPLATE, f, indent=4)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(cls.CONFIG_TEMPLATE)
                 
-            print(f"{Colors.GREEN}✓ Configuration template created at:{Colors.NC} {output_path}")
+            print(f"\033[0;32m✓ Configuration template created at:\033[0m {output_path}")
             return True
         except Exception as e:
-            print(f"{Colors.RED}✗ Failed to create configuration template: {str(e)}{Colors.NC}")
+            print(f"\033[0;31m✗ Failed to create configuration template: {str(e)}\033[0m")
             return False
     
     @classmethod
     def read_config(cls, config_path):
         """
-        Read configuration from a file
+        Read configuration from a YAML file
         
         Args:
             config_path (str): Path to the configuration file
@@ -77,20 +75,20 @@ class ConfigFileHandler:
             dict: Configuration values
         """
         if not os.path.exists(config_path):
-            print(f"{Colors.RED}✗ Configuration file not found: {config_path}{Colors.NC}")
+            print(f"\033[0;31m✗ Configuration file not found: {config_path}\033[0m")
             return None
             
         try:
-            with open(config_path, 'r') as f:
-                config_data = json.load(f)
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config_data = yaml.safe_load(f)
                 
-            print(f"{Colors.GREEN}✓ Configuration loaded from:{Colors.NC} {config_path}")
+            print(f"\033[0;32m✓ Configuration loaded from:\033[0m {config_path}")
             return config_data
-        except json.JSONDecodeError:
-            print(f"{Colors.RED}✗ Invalid JSON in configuration file{Colors.NC}")
+        except yaml.YAMLError as e:
+            print(f"\033[0;31m✗ Invalid YAML in configuration file: {str(e)}\033[0m")
             return None
         except Exception as e:
-            print(f"{Colors.RED}✗ Failed to read configuration: {str(e)}{Colors.NC}")
+            print(f"\033[0;31m✗ Failed to read configuration: {str(e)}\033[0m")
             return None
     
     @classmethod
@@ -104,6 +102,10 @@ class ConfigFileHandler:
         Returns:
             bool: True if successful, False otherwise
         """
+        # Import here to avoid circular imports
+        from ..config import Config
+        from .logger import Logger
+        
         config_data = cls.read_config(config_path)
         if not config_data:
             return False
@@ -155,7 +157,7 @@ class ConfigFileHandler:
             
             return True
         except Exception as e:
-            print(f"{Colors.RED}✗ Failed to apply configuration: {str(e)}{Colors.NC}")
+            print(f"\033[0;31m✗ Failed to apply configuration: {str(e)}\033[0m")
             Logger.error(f"Failed to apply configuration: {str(e)}")
             return False
             
@@ -163,19 +165,24 @@ class ConfigFileHandler:
     def get_default_config_path(cls):
         """Get the default configuration file path"""
         # Try in this order:
-        # 1. ~/.config/jfmo/config.json
-        # 2. /etc/jfmo/config.json
-        # 3. ./config.json
+        # 1. ~/.config/jfmo/config.yaml
+        # 2. ~/.config/jfmo/config.yml
+        # 3. /etc/jfmo/config.yaml
+        # 4. /etc/jfmo/config.yml
+        # 5. ./config.yaml
+        # 6. ./config.yml
         
-        home_config = os.path.expanduser("~/.config/jfmo/config.json")
-        system_config = "/etc/jfmo/config.json"
-        local_config = "./config.json"
+        config_paths = [
+            os.path.expanduser("~/.config/jfmo/config.yaml"),
+            os.path.expanduser("~/.config/jfmo/config.yml"),
+            "/etc/jfmo/config.yaml",
+            "/etc/jfmo/config.yml",
+            "./config.yaml",
+            "./config.yml"
+        ]
         
-        if os.path.exists(home_config):
-            return home_config
-        elif os.path.exists(system_config):
-            return system_config
-        elif os.path.exists(local_config):
-            return local_config
+        for config_path in config_paths:
+            if os.path.exists(config_path):
+                return config_path
             
         return None

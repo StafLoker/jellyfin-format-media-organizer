@@ -1,16 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-TMDB (The Movie Database) integration for JFMO
-"""
-
 import requests
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, Optional
 from ..config import Config
 from ..utils import Logger, Colors
 from ..utils.interactive_ui import InteractiveUI
-
 
 class TMDBClient:
     """Client for The Movie Database API"""

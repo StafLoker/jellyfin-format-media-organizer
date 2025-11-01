@@ -1,12 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Year detector for JFMO
-"""
-
 import re
-
 
 class YearDetector:
     """Detects year values from filenames"""

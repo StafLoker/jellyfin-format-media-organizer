@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Logging module for JFMO
-"""
-
 import logging
 from ..config import Config
 

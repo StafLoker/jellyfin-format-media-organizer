@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Transliteration module for JFMO - Using trained N-gram models
-"""
-
 import os
 import pickle
 from pathlib import Path

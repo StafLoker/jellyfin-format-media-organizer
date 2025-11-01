@@ -1,13 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Season/Episode detector for JFMO
-"""
-
 import re
 from typing import Optional, Tuple
-
 
 class SeasonEpisodeDetector:
     """Detects season and episode numbers from filenames"""

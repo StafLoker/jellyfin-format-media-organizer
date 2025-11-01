@@ -1,17 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Directory processor for JFMO
-"""
-
 import os
 import re
 from ..config import Config
-from ..utils import FileOps, Colors, Logger, Transliterator
+from ..utils import FileOps, Logger, Transliterator
 from ..utils.output_formatter import OutputFormatter
 from ..detectors import SeasonEpisodeDetector, YearDetector, QualityDetector
-from ..metadata import TMDBClient
 from .series_processor import SeriesProcessor
 
 

@@ -1,12 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Quality detector for JFMO
-"""
-
 import re
-
 
 class QualityDetector:
     """Detects video quality from filenames"""

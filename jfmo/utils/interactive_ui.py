@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Interactive UI module for JFMO
-"""
-
 import sys
 import os
 from typing import List, Dict, Any, Optional

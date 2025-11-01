@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Output formatting utilities for JFMO
-"""
-
 import os
 import shutil
 from typing import Dict, List, Optional, Tuple, Any

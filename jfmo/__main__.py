@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Main module for JFMO
-"""
-
 import os
 import sys
 import re

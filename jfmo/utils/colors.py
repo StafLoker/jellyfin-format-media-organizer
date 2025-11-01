@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Terminal colors utility for JFMO
-"""
-
-
 class Colors:
     """ANSI color codes for terminal output"""
     GREEN = '\033[0;32m'

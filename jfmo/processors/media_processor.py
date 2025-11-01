@@ -1,14 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Base media processor class for JFMO
-"""
-
 from ..utils import FileOps, Transliterator
 from ..detectors import YearDetector, QualityDetector
-
-
 class MediaProcessor:
     """Base class for media processing"""
     
