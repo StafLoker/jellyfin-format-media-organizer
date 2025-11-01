@@ -25,13 +25,23 @@ def parse_args():
                         help="Suppress log messages (except errors)")
     output_group.add_argument("--verbose", action="store_true",
                         help="Show detailed log messages (default in test mode)")
-                        
-    # Interactive mode options (mutually exclusive)
-    interactive_group = parser.add_mutually_exclusive_group()
-    interactive_group.add_argument("--non-interactive", action="store_true",
+    
+    # Interactive mode option
+    parser.add_argument("--no-interactive", action="store_true",
                         help="Disable interactive mode (automatic selection of best match)")
-    interactive_group.add_argument("--semi-interactive", action="store_true",
-                        help="Only show interactive prompts for truly ambiguous matches")
+    
+    # Daemon mode options
+    daemon_group = parser.add_argument_group("Daemon Mode Options")
+    daemon_group.add_argument("-d", "--daemon", action="store_true",
+                             help="Run in daemon mode (watch directory for new files)")
+    daemon_group.add_argument("--daemon-interval", type=int, default=10, metavar="SECONDS",
+                             help="Check interval for daemon mode (default: 10 seconds)")
+    daemon_group.add_argument("--incomplete-dir", metavar="DIR",
+                             help="Directory with incomplete downloads (prevents partial season moves)")
+    
+    # Manual mode (one-time execution)
+    parser.add_argument("-m", "--manual", action="store_true",
+                       help="Manual mode - single execution with interactive prompts enabled (default behavior)")
     
     # Configuration file options
     config_group = parser.add_argument_group("Configuration File Options")
@@ -85,6 +95,21 @@ def update_config_from_args(args):
     # Update Test Mode
     Config.TEST_MODE = args.test
     
+    # Handle incomplete directory (works in both daemon and manual modes)
+    if args.incomplete_dir:
+        Config.INCOMPLETE_DIR = args.incomplete_dir
+    
+    # Update daemon mode
+    Config.DAEMON_MODE = args.daemon
+    if args.daemon:
+        Config.DAEMON_INTERVAL = args.daemon_interval
+        # Daemon mode always disables interactive mode
+        Config.INTERACTIVE_MODE = False
+    
+    # Manual mode explicitly enables interactive (default behavior)
+    if args.manual:
+        Config.INTERACTIVE_MODE = True
+    
     # Update verbose mode based on test mode and explicit settings
     if args.quiet:
         Config.VERBOSE = False
@@ -93,13 +118,10 @@ def update_config_from_args(args):
     else:
         Config.VERBOSE = args.test
     
-    # Update interactive mode settings
-    if args.non_interactive:
-        Config.INTERACTIVE_MODE = False
-        Config.SEMI_INTERACTIVE_MODE = False
-    elif args.semi_interactive:
-        Config.INTERACTIVE_MODE = True
-        Config.SEMI_INTERACTIVE_MODE = True
+    # Update interactive mode setting (only if not in daemon mode)
+    if not Config.DAEMON_MODE:
+        if args.no_interactive:
+            Config.INTERACTIVE_MODE = False
     
     # Update paths if provided
     if args.media_dir:

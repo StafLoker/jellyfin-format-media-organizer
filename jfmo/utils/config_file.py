@@ -15,6 +15,7 @@ directories:
   downloads: /data/media/downloads
   films: /data/media/films
   series: /data/media/series
+  incomplete: /data/media/incomplete  # Optional: directory with incomplete downloads
 
 # File Permissions
 permissions:
@@ -33,8 +34,12 @@ logging:
 
 # Processing Options
 options:
-  interactive: true  # Show interactive prompts for ambiguous matches
-  semi_interactive: false  # Only prompt for truly ambiguous cases
+  interactive: true  # Show interactive prompts for ambiguous matches (auto-disabled in daemon mode)
+
+# Daemon Mode Options
+daemon:
+  enabled: false  # Run as daemon (watch directory for new files)
+  check_interval: 10  # Seconds between directory checks
 """
     
     @classmethod
@@ -57,10 +62,10 @@ options:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(cls.CONFIG_TEMPLATE)
                 
-            print(f"\033[0;32m✓ Configuration template created at:\033[0m {output_path}")
+            print(f"\033[0;32mâœ“ Configuration template created at:\033[0m {output_path}")
             return True
         except Exception as e:
-            print(f"\033[0;31m✗ Failed to create configuration template: {str(e)}\033[0m")
+            print(f"\033[0;31mâœ— Failed to create configuration template: {str(e)}\033[0m")
             return False
     
     @classmethod
@@ -75,20 +80,20 @@ options:
             dict: Configuration values
         """
         if not os.path.exists(config_path):
-            print(f"\033[0;31m✗ Configuration file not found: {config_path}\033[0m")
+            print(f"\033[0;31mâœ— Configuration file not found: {config_path}\033[0m")
             return None
             
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config_data = yaml.safe_load(f)
                 
-            print(f"\033[0;32m✓ Configuration loaded from:\033[0m {config_path}")
+            print(f"\033[0;32mâœ“ Configuration loaded from:\033[0m {config_path}")
             return config_data
         except yaml.YAMLError as e:
-            print(f"\033[0;31m✗ Invalid YAML in configuration file: {str(e)}\033[0m")
+            print(f"\033[0;31mâœ— Invalid YAML in configuration file: {str(e)}\033[0m")
             return None
         except Exception as e:
-            print(f"\033[0;31m✗ Failed to read configuration: {str(e)}\033[0m")
+            print(f"\033[0;31mâœ— Failed to read configuration: {str(e)}\033[0m")
             return None
     
     @classmethod
@@ -122,6 +127,8 @@ options:
                     Config.FILMS = dirs['films']
                 if 'series' in dirs:
                     Config.SERIES = dirs['series']
+                if 'incomplete' in dirs:
+                    Config.INCOMPLETE_DIR = dirs['incomplete']
             
             # Update permission settings
             if 'permissions' in config_data:
@@ -152,12 +159,18 @@ options:
                 options = config_data['options']
                 if 'interactive' in options:
                     Config.INTERACTIVE_MODE = options['interactive']
-                if 'semi_interactive' in options:
-                    Config.SEMI_INTERACTIVE_MODE = options['semi_interactive']
+            
+            # Update daemon settings
+            if 'daemon' in config_data:
+                daemon = config_data['daemon']
+                if 'enabled' in daemon:
+                    Config.DAEMON_MODE = daemon['enabled']
+                if 'check_interval' in daemon:
+                    Config.DAEMON_INTERVAL = daemon['check_interval']
             
             return True
         except Exception as e:
-            print(f"\033[0;31m✗ Failed to apply configuration: {str(e)}\033[0m")
+            print(f"\033[0;31mâœ— Failed to apply configuration: {str(e)}\033[0m")
             Logger.error(f"Failed to apply configuration: {str(e)}")
             return False
             

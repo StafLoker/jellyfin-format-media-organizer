@@ -9,6 +9,46 @@ from .utils.output_formatter import OutputFormatter
 from .detectors import SeasonEpisodeDetector
 from .processors import MovieProcessor, SeriesProcessor, DirectoryProcessor
 from .cli import parse_args, check_root, check_dependencies, handle_config_options, update_config_from_args
+from .daemon import DaemonManager
+
+
+def has_incomplete_episodes(series_name, season_num):
+    """
+    Check if series has incomplete episodes in incomplete directory
+    
+    Args:
+        series_name (str): Name of the series
+        season_num (str): Season number (e.g., "01")
+        
+    Returns:
+        bool: True if incomplete episodes exist
+    """
+    if not Config.INCOMPLETE_DIR or not os.path.exists(Config.INCOMPLETE_DIR):
+        return False
+    
+    try:
+        # Normalize series name for comparison
+        series_lower = series_name.lower().replace(' ', '').replace('.', '')
+        
+        for filename in os.listdir(Config.INCOMPLETE_DIR):
+            if not FileOps.is_video_file(filename):
+                continue
+            
+            # Check if filename matches series and season
+            filename_lower = filename.lower().replace(' ', '').replace('.', '')
+            
+            # Look for season pattern
+            season_pattern = f's{season_num}e[0-9]{{1,2}}'
+            
+            if (series_lower in filename_lower and 
+                re.search(season_pattern, filename_lower)):
+                Logger.info(f"Found incomplete episode: {filename}")
+                return True
+        
+        return False
+    except Exception as e:
+        Logger.error(f"Error checking incomplete episodes: {e}")
+        return False
 
 
 def should_skip_file(filename):
@@ -105,8 +145,20 @@ def process_files():
                 OutputFormatter.print_file_processing_info("Detected", "TV Series")
                 season_episode = SeasonEpisodeDetector.detect(filename)
                 if season_episode:
+                    season_num, episode_num = season_episode
                     OutputFormatter.print_file_processing_info("Season/Episode", 
-                               f"S{int(season_episode[0]):02d}E{int(season_episode[1]):02d}")
+                               f"S{int(season_num):02d}E{int(episode_num):02d}")
+                    
+                    # Check for incomplete episodes before processing
+                    clean_title = FileOps.clean_name(filename)
+                    if has_incomplete_episodes(clean_title, f"{int(season_num):02d}"):
+                        OutputFormatter.print_file_processing_result(
+                            success=None,
+                            message="Skipped - incomplete episodes exist in incomplete directory",
+                            details={"File": file_path}
+                        )
+                        stats['skipped'] += 1
+                        continue
                     
                     result = series_processor.process(file_path)
                     if result:
@@ -148,9 +200,21 @@ def process_files():
             if is_series:
                 season_episode = SeasonEpisodeDetector.detect(filename)
                 if season_episode:
+                    season_num, episode_num = season_episode
                     OutputFormatter.print_file_processing_info("Detected", "TV Series")
                     OutputFormatter.print_file_processing_info("Season/Episode", 
-                                   f"S{int(season_episode[0]):02d}E{int(season_episode[1]):02d}")
+                                   f"S{int(season_num):02d}E{int(episode_num):02d}")
+                    
+                    # Check for incomplete episodes before processing
+                    clean_title = FileOps.clean_name(filename)
+                    if has_incomplete_episodes(clean_title, f"{int(season_num):02d}"):
+                        OutputFormatter.print_file_processing_result(
+                            success=None,
+                            message="Skipped - incomplete episodes exist in incomplete directory",
+                            details={"File": file_path}
+                        )
+                        stats['skipped'] += 1
+                        continue
                     
                     result = series_processor.process(file_path)
                     if result:
@@ -239,13 +303,23 @@ def main():
     # Then update config from command line arguments (overriding config file)
     update_config_from_args(args)
     
-    # Check if running as root
-    check_root()
+    # Check if running as root (only in non-test, non-daemon mode)
+    if not Config.DAEMON_MODE:
+        check_root()
     
     # Check dependencies
     check_dependencies()
     
-    # Print header
+    # If daemon mode, start daemon and exit
+    if Config.DAEMON_MODE:
+        daemon = DaemonManager()
+        return 0 if daemon.start(
+            watch_dir=Config.DOWNLOADS,
+            incomplete_dir=Config.INCOMPLETE_DIR,
+            check_interval=Config.DAEMON_INTERVAL
+        ) else 1
+    
+    # Normal mode - print header
     OutputFormatter.print_header()
     
     # Check directories

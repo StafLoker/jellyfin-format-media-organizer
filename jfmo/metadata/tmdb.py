@@ -18,7 +18,6 @@ class TMDBClient:
         """
         self.api_key = Config.TMDB_API_KEY
         self.interactive = interactive and not Config.TEST_MODE
-        self.semi_interactive = Config.SEMI_INTERACTIVE_MODE
         
         if not self.api_key:
             print(f"{Colors.YELLOW}Warning: TMDB API key not configured. TMDB integration disabled.{Colors.NC}")

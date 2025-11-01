@@ -23,11 +23,14 @@ class Config:
     # Runtime options
     TEST_MODE = False
     VERBOSE = False
-    INTERACTIVE_MODE = True  # Enable interactive mode by default
-    SEMI_INTERACTIVE_MODE = False  # Only show interactive prompt for truly ambiguous cases
+    INTERACTIVE_MODE = True  # Enable interactive mode (disabled automatically in daemon mode)
     
-    # Supported languages for transliteration
-    TRANSLITERATION_LANGS = ['ru']
+    # Daemon mode options
+    DAEMON_MODE = False
+    DAEMON_INTERVAL = 10  # Seconds between checks
+    
+    # Incomplete downloads directory (used in both daemon and manual modes)
+    INCOMPLETE_DIR = None
     
     # Video file extensions
     VIDEO_EXTENSIONS = ('.mkv', '.mp4', '.avi', '.m4v', '.mov', '.wmv', '.flv')
