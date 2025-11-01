@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Script to setup a test environment for JFMO development
-# Updated to use a single downloads directory for all files
 
 # Colors for better visualization
 GREEN='\033[0;32m'
@@ -30,34 +29,39 @@ mkdir -p "$SERIES_DIR"
 CONFIG_DIR="$TEST_DIR/config"
 mkdir -p "$CONFIG_DIR"
 
-CONFIG_FILE="$CONFIG_DIR/jfmo_test_config.json"
+CONFIG_FILE="$CONFIG_DIR/jfmo_test_config.yaml"
 
-echo -e "${BLUE}Creating test configuration...${NC}"
+echo -e "${BLUE}Creating test configuration (YAML)...${NC}"
 cat > "$CONFIG_FILE" << EOL
-{
-    "directories": {
-        "media_dir": "$(pwd)/$TEST_DIR",
-        "downloads": "$(pwd)/$DOWNLOADS_DIR",
-        "films": "$(pwd)/$FILMS_DIR",
-        "series": "$(pwd)/$SERIES_DIR"
-    },
-    "permissions": {
-        "user": "$(whoami)",
-        "group": "$(id -gn)"
-    },
-    "tmdb": {
-        "api_key": "",
-        "enabled": false
-    },
-    "logging": {
-        "log_file": "$(pwd)/$TEST_DIR/jfmo.log",
-        "verbose": false
-    },
-    "options": {
-        "interactive": true,
-        "semi_interactive": false
-    }
-}
+# JFMO Test Configuration File
+# Jellyfin Format Media Organizer
+
+# Directory Configuration
+directories:
+  media_dir: $(pwd)/$TEST_DIR
+  downloads: $(pwd)/$DOWNLOADS_DIR
+  films: $(pwd)/$FILMS_DIR
+  series: $(pwd)/$SERIES_DIR
+
+# File Permissions
+permissions:
+  user: $(whoami)
+  group: $(id -gn)
+
+# TMDB Integration
+tmdb:
+  api_key: ""  # Add your TMDB API key here for testing
+  enabled: false
+
+# Logging Configuration
+logging:
+  log_file: $(pwd)/$TEST_DIR/jfmo.log
+  verbose: false
+
+# Processing Options
+options:
+  interactive: true
+  semi_interactive: false
 EOL
 
 echo -e "${BLUE}Creating sample files in downloads directory...${NC}"
@@ -137,7 +141,7 @@ touch "$DOWNLOADS_DIR/Westworld.S01E01-E02.1080p.mkv"
 touch "$DOWNLOADS_DIR/Succession.S03E01-02.720p.mkv"
 touch "$DOWNLOADS_DIR/The.Last.of.Us.S01E01.E02.2160p.mkv"
 
-# Create a README for the test environment
+# Create README
 README_FILE="$TEST_DIR/README.md"
 cat > "$README_FILE" << EOL
 # JFMO Test Environment
@@ -166,46 +170,36 @@ This directory contains a comprehensive test environment for JFMO development wi
 
 ## Usage
 
-To test JFMO with this environment:
-
 \`\`\`bash
-# Run in test mode (no actual changes, verbose output by default)
+# Test mode
 python3 -m jfmo --config $(pwd)/$CONFIG_FILE --test
 
-# Run with interactive mode (recommended for testing problematic patterns)
+# Interactive mode
 python3 -m jfmo --config $(pwd)/$CONFIG_FILE --verbose
 
-# Run with semi-interactive mode (only prompting for truly ambiguous cases)
+# Semi-interactive mode
 python3 -m jfmo --config $(pwd)/$CONFIG_FILE --semi-interactive --verbose
 
-# Run without interactive mode
+# Non-interactive mode
 python3 -m jfmo --config $(pwd)/$CONFIG_FILE --non-interactive --verbose
 \`\`\`
 
-## Expected Behavior
+## File Patterns
 
-1. Movie files should be detected and moved to the films directory
-2. TV show files should be detected and organized in the series directory
-3. Some problematic patterns may face issues:
-   - Some may be incorrectly categorized (movies as TV or vice versa)
-   - Some may be skipped with error messages
-   - Some might work correctly despite the complex patterns
+- Valid movies: Standard patterns with year and quality
+- Valid TV shows: SxxExx, S01.E01 patterns
+- Problematic: 3x07, Episode N, date-based, Russian transliteration
+- Edge cases: Numeric titles (1923, 24), multi-episode files
 
-This allows testing both the detection capabilities and the error handling of JFMO.
+See files in \`downloads/\` directory for examples.
 EOL
 
 echo ""
-echo -e "${GREEN}✅ Realistic test environment created successfully!${NC}"
+echo -e "${GREEN}✅ Test environment created successfully!${NC}"
 echo ""
-echo -e "${YELLOW}To test JFMO, run:${NC}"
+echo -e "${YELLOW}Configuration file format: YAML${NC}"
+echo -e "${YELLOW}Config location:${NC} $(pwd)/$CONFIG_FILE"
+echo ""
+echo -e "${YELLOW}To test JFMO:${NC}"
 echo -e "${BLUE}python3 -m jfmo --config $CONFIG_FILE --test${NC}"
-echo ""
-echo -e "${YELLOW}For interactive testing:${NC}"
-echo -e "${BLUE}python3 -m jfmo --config $CONFIG_FILE --verbose${NC}"
-echo ""
-echo -e "${YELLOW}For semi-interactive testing:${NC}"
-echo -e "${BLUE}python3 -m jfmo --config $CONFIG_FILE --semi-interactive --verbose${NC}"
-echo ""
-echo -e "${YELLOW}Test environment located at:${NC} $(pwd)/$TEST_DIR"
-echo -e "${YELLOW}See $(pwd)/$TEST_DIR/README.md for details on test patterns${NC}"
 echo ""
