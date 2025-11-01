@@ -40,14 +40,6 @@ class SeasonEpisodeDetector:
         match = re.search(r'[Ss]([0-9]{1,2})[Ee]([0-9]{1,2})-[Ee]?[0-9]{1,2}', filename)
         if match:
             return (match.group(1), match.group(2))
-            
-        # Pattern 6: Season number in format "s01" in directory name
-        # (Used with season_only=True in detect_season_only method)
-        match = re.search(r'\bs([0-9]{1,2})\b', filename.lower())
-        if match:
-            # Return only when specifically requesting this pattern
-            # See detect_season_only method below
-            pass
         
         # Pattern 7: Combined season/episode like 308 (s03e08)
         match = re.search(r'(?<![0-9])([0-9]{1})([0-9]{2})(?![0-9])', filename)
@@ -55,15 +47,6 @@ class SeasonEpisodeDetector:
             # Check if this could reasonably be a season/episode (avoid false positives)
             # Most shows don't go beyond season 30, and episodes don't go beyond 99
             return (match.group(1), match.group(2))
-        
-        # Pattern 8: Detect "La Casa de Papel 3" where 3 is the season
-        match = re.search(r'Casa de Papel ([0-9]{1})', filename)
-        if match:
-            return (match.group(1), "00")  # No specific episode, use 00 as default
-        
-        # Pattern 9: Episode without season (e.g., "Episode 5")
-        # We don't include this by default as it's too ambiguous
-        # If needed, implement with specific context checks
         
         return None
     
@@ -82,8 +65,6 @@ class SeasonEpisodeDetector:
         match = re.search(r'\bs([0-9]{1,2})\b', directory_name.lower())
         if match:
             return match.group(1)
-            
-        # Other season-only patterns can be added here
         
         return None
         

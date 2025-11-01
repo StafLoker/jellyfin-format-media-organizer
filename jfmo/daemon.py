@@ -5,13 +5,13 @@ import os
 import time
 import signal
 import sys
-from pathlib import Path
-from typing import Set, Dict
-from threading import Thread, Event
+from typing import Set
+from threading import Event
 
 from .config import Config
-from .utils import Logger, FileOps, Colors
+from .utils import Logger, FileOps, Colors, IncompleteChecker
 from .__main__ import process_files, process_directories
+from .detectors import SeasonEpisodeDetector
 
 
 class FileWatcher:
@@ -32,9 +32,6 @@ class FileWatcher:
         self.known_files: Set[str] = set()
         self.processing_files: Set[str] = set()
         self.stop_event = Event()
-        
-        # Track series episodes to prevent partial season moves
-        self.series_episodes: Dict[str, Set[str]] = {}
         
         Logger.info(f"FileWatcher initialized - watching: {watch_dir}")
         if incomplete_dir:
@@ -77,45 +74,6 @@ class FileWatcher:
             Logger.error(f"Error checking file stability: {e}")
             return False
     
-    def _has_incomplete_episodes(self, series_name: str, season: str) -> bool:
-        """
-        Check if series has incomplete episodes in incomplete directory
-        
-        Args:
-            series_name: Name of the series
-            season: Season number (e.g., "01")
-            
-        Returns:
-            bool: True if incomplete episodes exist
-        """
-        if not self.incomplete_dir or not os.path.exists(self.incomplete_dir):
-            return False
-        
-        try:
-            # Normalize series name for comparison
-            series_lower = series_name.lower().replace(' ', '').replace('.', '')
-            
-            for filename in os.listdir(self.incomplete_dir):
-                if not FileOps.is_video_file(filename):
-                    continue
-                
-                # Check if filename matches series and season
-                filename_lower = filename.lower().replace(' ', '').replace('.', '')
-                
-                # Look for season pattern
-                import re
-                season_pattern = f's{season}e[0-9]{{1,2}}'
-                
-                if (series_lower in filename_lower and 
-                    re.search(season_pattern, filename_lower)):
-                    Logger.info(f"Found incomplete episode: {filename}")
-                    return True
-            
-            return False
-        except Exception as e:
-            Logger.error(f"Error checking incomplete episodes: {e}")
-            return False
-    
     def _should_skip_series_file(self, filepath: str) -> bool:
         """
         Check if series file should be skipped due to incomplete episodes
@@ -126,8 +84,6 @@ class FileWatcher:
         Returns:
             bool: True if should skip
         """
-        from .detectors import SeasonEpisodeDetector
-        
         filename = os.path.basename(filepath)
         season_episode = SeasonEpisodeDetector.detect(filename)
         
@@ -142,7 +98,7 @@ class FileWatcher:
         clean_title = processor.get_clean_title(filename)
         
         # Check for incomplete episodes
-        if self._has_incomplete_episodes(clean_title, f"{int(season_num):02d}"):
+        if IncompleteChecker.has_incomplete_episodes(clean_title, f"{int(season_num):02d}", self.incomplete_dir):
             Logger.warning(f"Skipping {filename} - incomplete episodes exist")
             return True
         
