@@ -4,7 +4,7 @@ on:
   push:
     branches: ['release/v*', 'develop']
   pull_request:
-    branches: ['main']
+    branches: ['main', 'develop']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,10 +26,10 @@ jobs:
         run: uv sync
 
       - name: Lint
-        run: make lint-fix
+        run: make lint
 
       - name: Format
-        run: make format
+        run: make format-check
 
       - name: Tests
         run: uv run pytest --tb=short

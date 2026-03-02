@@ -14,6 +14,3 @@ format-check:
 
 test:
 	uv run pytest
-
-test-ci:
-	uv run pytest --tb=short
