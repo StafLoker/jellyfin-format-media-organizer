@@ -69,9 +69,7 @@ def test_ambiguous_file_skipped(formatter, media_dirs, mock_tmdb, tmp_path):
     """Ambiguous file produces no link but does not crash other files."""
     _, tv_dir = media_dirs
     mock_tmdb.search_tv.return_value = (5678, "2020")
-    dirpath = _show_dir(
-        tmp_path, "Show.S01", ["S01E01.mkv", "Show.2024-01-15.mkv"]
-    )
+    dirpath = _show_dir(tmp_path, "Show.S01", ["S01E01.mkv", "Show.2024-01-15.mkv"])
 
     result = formatter.format_directory(str(dirpath))
 

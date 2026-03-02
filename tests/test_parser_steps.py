@@ -242,7 +242,9 @@ def test_pipeline_tv_episode():
     """Full chain on a typical TV filename."""
     from jfmo.parser import Parser
 
-    parser = Parser(ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep())
+    parser = Parser(
+        ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep()
+    )
     ctx = parser.parse("/downloads/The.Office.S03E07.720p.BluRay.mkv")
 
     assert ctx.tokens["season"] == "03"
@@ -257,7 +259,9 @@ def test_pipeline_movie():
     """Full chain on a typical movie filename."""
     from jfmo.parser import Parser
 
-    parser = Parser(ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep())
+    parser = Parser(
+        ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep()
+    )
     ctx = parser.parse("/downloads/Inception.2010.1080p.BluRay.mkv")
 
     assert ctx.tokens["year"] == "2010"
@@ -271,7 +275,9 @@ def test_pipeline_lostfilm():
     """LostFilm release: quality strips rus and LostFilm tags."""
     from jfmo.parser import Parser
 
-    parser = Parser(ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep())
+    parser = Parser(
+        ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep()
+    )
     ctx = parser.parse("/downloads/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.rus.LostFilm.TV.mkv")
 
     assert ctx.tokens["season"] == "01"
@@ -285,7 +291,9 @@ def test_pipeline_ambiguous_skips():
     """Ambiguous pattern stops pipeline and sets skip_reason."""
     from jfmo.parser import Parser
 
-    parser = Parser(ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep())
+    parser = Parser(
+        ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep()
+    )
     ctx = parser.parse("/downloads/Show.2024-01-15.mkv")
 
     assert ctx.skip_reason is not None
@@ -296,7 +304,9 @@ def test_pipeline_dirname():
     """Pipeline correctly parses a directory name (no extension, standalone season)."""
     from jfmo.parser import Parser
 
-    parser = Parser(ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep())
+    parser = Parser(
+        ExtensionStep(), SeasonStep(), EpisodeStep(), YearStep(), QualityStep(), MediaTypeStep(), TitleStep()
+    )
     ctx = parser.parse("Breaking.Bad.S02")
 
     assert ctx.tokens["season"] == "02"

@@ -60,12 +60,7 @@ def test_full_metadata(tv_dir, source_file, mock_tmdb):
     result = TvProcessor(mock_tmdb).process(ctx)
 
     assert result is True
-    dest = (
-        tv_dir
-        / "Breaking Bad (2008) [tmdbid-1396]"
-        / "Season 01"
-        / "Breaking Bad S01E05 - [1080p].mkv"
-    )
+    dest = tv_dir / "Breaking Bad (2008) [tmdbid-1396]" / "Season 01" / "Breaking Bad S01E05 - [1080p].mkv"
     assert dest.exists()
     assert dest.stat().st_ino == src.stat().st_ino  # hard link
 
