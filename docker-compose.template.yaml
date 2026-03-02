@@ -1,0 +1,14 @@
+services:
+  jfmo:
+    image: ghcr.io/stafloker/jfmo:latest
+    container_name: jfmo
+    volumes:
+      # Configuration file (copy from config.template.yaml and edit)
+      - /path/to/config.yaml:/etc/jfmo/config.yaml:ro
+      # Media directories — all must be on the same filesystem (required for hard links)
+      - /path/to/downloads:/downloads
+      - /path/to/films:/films
+      - /path/to/tv:/tv
+      # Optional: persist logs
+      - /path/to/logs:/var/log/jfmo
+    restart: unless-stopped
