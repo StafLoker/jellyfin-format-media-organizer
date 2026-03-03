@@ -127,6 +127,22 @@ docker compose run --rm jfmo run
 docker compose run --rm jfmo run --apply
 ```
 
+## Update
+
+### pipx
+
+```bash
+sudo pipx upgrade jfmo --global
+sudo systemctl restart jfmo
+```
+
+### Docker
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
 ## Usage
 
 ```
