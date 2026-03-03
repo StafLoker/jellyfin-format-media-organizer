@@ -1,463 +1,230 @@
 <div align="center">
-   <img width="150" height="150" src="logo.png" alt="Logo">
-   <h1><b>Jellyfin Format Media Organizer</b></h1>
-   <p><i>~ JFMO ~</i></p>
-   <p align="center">
-      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/blob/main/LICENSE">License</a> ·
-      <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases">Releases</a>
-   </p>
+  <img width="150" height="150" src="logo.png" alt="Logo">
+  <h1><b>Jellyfin Format Media Organizer</b></h1>
+  <p><i>~ JFMO ~</i></p>
+  <p align="center">
+     <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases">Releases</a> ·
+     <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/blob/main/LICENSE">License</a>
+  </p>
 </div>
 
 <div align="center">
-   <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases"><img src="https://img.shields.io/github/downloads/StafLoker/jellyfin-format-media-organizer/total.svg?style=flat" alt="downloads"/></a>
-   <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases"><img src="https://img.shields.io/github/release-pre/StafLoker/jellyfin-format-media-organizer.svg?style=flat" alt="latest version"/></a>
-
-   <p>JFMO is a powerful media organization tool designed to automatically structure and rename your media files according to Jellyfin's recommended naming conventions. It features automatic transliteration support for non-Latin alphabets and TMDB integration for accurate metadata.</p>
+  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases"><img src="https://img.shields.io/github/release-pre/StafLoker/jellyfin-format-media-organizer.svg?style=flat" alt="latest version"/></a>
+  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/></a>
+  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/release.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/release.yml/badge.svg" alt="Release"/></a>
+  <a href="https://pypi.org/project/jfmo/"><img src="https://img.shields.io/pypi/dm/jfmo?style=flat&label=PyPI%20downloads" alt="PyPI downloads"/></a>
 </div>
+
+<br>
+
+Automatically organizes and renames media files according to [Jellyfin's naming conventions](https://jellyfin.org/docs/general/server/media/movies). Detects movies vs TV shows, fetches TMDB metadata, and handles transliteration of non-Latin filenames.
 
 ## Features
 
-- **Smart Media Detection** - Automatically identifies movies and TV shows
-- **Proper Jellyfin Naming** - Renames files to Jellyfin's recommended format
-- **TMDB Integration** - Adds TMDB IDs to filenames for better Jellyfin matching
-- **Interactive Mode** - Helps you select the correct match when multiple options exist
-- **Auto-Transliteration** - Converts transliterated names to their native scripts (Cyrillic, etc.)
-- **Permissions Management** - Sets correct ownership and permissions for Jellyfin
-- **Directory Structure** - Creates proper directory hierarchies for TV shows
-- **Metadata Extraction** - Extracts year, quality, season/episode information
-- **Directory Cleanup** - Removes empty directories after moving files
-- **Test Mode** - Preview changes without modifying files
-- **Configuration File** - Save your settings in a config file
+- Smart movie vs TV show detection
+- TMDB integration for IDs and metadata
+- Configurable naming via tokens
+- **Russian transliteration detection and conversion**
+- Daemon mode for continuous monitoring
 
 ## Installation
 
-### Prerequisites
-
-- Python 3.6+
-- `transliterate` package
-- `requests` package (for TMDB integration)
-- TMDB API key (optional, but recommended)
-
-### Recommended: Install with pipx
-
-The easiest way to install and use JFMO is with [pipx](https://pypa.github.io/pipx/), which installs Python applications in isolated environments:
+**1. Create a system user and add it to the `media` group:**
 
 ```bash
-# Install pipx if you don't have it already
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-
-# Install JFMO
-pipx install git+https://github.com/StafLoker/jellyfin-format-media-organizer.git
-
-# Now you can run JFMO from anywhere
-jfmo --help
+sudo groupadd media
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin jfmo
+sudo usermod -aG media jfmo
 ```
 
-To update JFMO when new versions are available:
+Make sure your media directories are owned or readable by the `media` group:
 
 ```bash
-pipx upgrade jfmo
+sudo chown -R :media /data/media
+sudo chmod -R g+rw /data/media
 ```
 
-### Alternative: Setting up a Virtual Environment
+**2. Set up the config:**
 
-If you prefer a virtual environment or are developing JFMO:
+Default config path: `/etc/jfmo/config.yaml`. See [`config.template.yaml`](config.template.yaml) for all options.
 
 ```bash
-# Clone the repository
-git clone https://github.com/StafLoker/jellyfin-format-media-organizer.git
-cd jellyfin-format-media-organizer
-
-# Create a virtual environment
-python3 -m venv .venv
-
-# Activate the virtual environment
-# On Linux/macOS:
-source .venv/bin/activate
-# On Windows:
-.venv\Scripts\activate
-
-# Install dependencies
-pip3 install transliterate requests
-
-# Install JFMO in development mode
-pip3 install -e .
+sudo mkdir -p /etc/jfmo
+sudo vim /etc/jfmo/config.yaml
+sudo chown -R jfmo:jfmo /etc/jfmo
 ```
 
-To deactivate the virtual environment when you're done:
-```bash
-deactivate
-```
+### Option 1 — pip / pipx
 
-### Alternative: Installing Globally
-
-If you prefer to install JFMO globally:
+**3. Install the package:**
 
 ```bash
-git clone https://github.com/StafLoker/jellyfin-format-media-organizer.git
-cd jellyfin-format-media-organizer
-pip3 install .
+sudo pipx install jfmo --global
 ```
 
-## Interactive Mode
+**4. Create the systemd unit `/etc/systemd/system/jfmo.service`:**
 
-JFMO features an interactive mode that helps you manually select the correct match when TMDB returns multiple possible results for a media file.
+```ini
+[Unit]
+Description=Jellyfin Format Media Organizer
+After=network.target
 
-### How It Works
+[Service]
+Type=simple
+User=jfmo
+Group=media
+ExecStart=/usr/local/bin/jfmo daemon
+Restart=on-failure
+RestartSec=10
 
-1. When JFMO finds multiple possible matches for a movie or TV show, it will present you with a list of options
-2. For each option, it displays:
-   - Title and year
-   - TMDB ID
-   - A brief overview (if available)
-   - Popularity score
-3. You can:
-   - Select a match by number
-   - Press Enter to select the recommended option
-   - Skip the file (leave it untouched)
-   - Quit the program
-
-### Smart Selection
-
-JFMO now features smarter selection algorithms that:
-1. Prioritize exact title matches
-2. Prioritize exact year matches
-3. Consider popularity scores
-4. Automatically select the best match when one is clearly superior
-
-### Interactive Modes
-
-JFMO offers three different interactive modes:
-
-1. **Full Interactive Mode** (default): Shows selection options whenever multiple matches are found
-2. **Semi-Interactive Mode** (`--semi-interactive`): Only shows selection options for truly ambiguous cases
-3. **Non-Interactive Mode** (`--non-interactive`): Always selects the best match automatically
-
-### Enabling/Disabling Interactive Mode
-
-Interactive mode settings can be controlled in several ways:
-
-1. **Command line**:
-   - `--non-interactive` flag disables it completely
-   - `--semi-interactive` flag enables smart selection
-2. **Configuration file**:
-   - Set `"interactive": false` to disable completely
-   - Set `"semi_interactive": true` for smart selection
-3. **Test mode**: Interactive mode still works during test runs
-
-### Example Interactive Selection
-
-```
-============================================================
-MULTIPLE MOVIE MATCHES FOUND
-🔍 Original File: The.Matrix.1999.1080p.mkv
-🔍 Search Query: The Matrix
-============================================================
-[1] (Recommend) The Matrix (1999) [tmdbid-603]
-    Overview: Set in the 22nd century, The Matrix tells the story of a computer hacker who joins a group of underg...
-    Popularity: 84.2
-[2] Making 'The Matrix' (1999) [tmdbid-684431]
-    Overview: A promotional making-of documentary for the film Matrix, The (1999) that devotes its time to explain...
-    Popularity: 6.3
-[3] The Matrix: What Is Bullet-Time? (1999) [tmdbid-684428]
-    Overview: Special Effects wizard John Gaeta demonstrates how the "Bullet-Time" effects were created for the fi...
-    Popularity: 2.1
-------------------------------------------------------------
-[s] Skip (leave file untouched)
-[q] Quit
-------------------------------------------------------------
-Please select an option [1-3, s, q]: 
+[Install]
+WantedBy=multi-user.target
 ```
 
-## Configuration
-
-JFMO can be configured via command line arguments or through a configuration file.
-
-### Configuration File
-
-Using a configuration file is the recommended way to use JFMO, as it allows you to save your settings and avoid typing long command lines.
-
-#### Generate a Template
-
-First, generate a configuration template:
+**5. Enable and start:**
 
 ```bash
-jfmo --generate-config ~/.config/jfmo/config.json
+sudo systemctl daemon-reload
+sudo systemctl enable --now jfmo
+sudo systemctl status jfmo
 ```
 
-Edit the generated file to match your environment:
-
-```json
-{
-    "directories": {
-        "media_dir": "/data/media",
-        "downloads": "/data/media/downloads",
-        "films": "/data/media/films",
-        "series": "/data/media/series"
-    },
-    "permissions": {
-        "user": "jellyfin",
-        "group": "media"
-    },
-    "tmdb": {
-        "api_key": "your_tmdb_api_key_here",
-        "enabled": true
-    },
-    "logging": {
-        "log_file": "/tmp/jfmo.log",
-        "verbose": false
-    },
-    "options": {
-        "interactive": true,
-        "semi_interactive": false
-    }
-}
-```
-
-#### Using the Configuration File
-
-Once you have a configuration file, you can run JFMO with:
+**Run once manually** (without stopping the daemon):
 
 ```bash
-jfmo --config ~/.config/jfmo/config.json
+sudo -u jfmo -g media jfmo run --apply
 ```
 
-JFMO will automatically look for configuration files in these locations (in order):
-1. Custom path specified with `--config`
-2. `~/.config/jfmo/config.json`
-3. `/etc/jfmo/config.json`
-4. `./config.json`
+### Option 2 — Docker
 
-## TMDB Integration
+See example of docker compose file in [`docker-compose.template.yaml`](docker-compose.template.yaml).
 
-JFMO can integrate with The Movie Database (TMDB) to add TMDB IDs to your media filenames, which helps Jellyfin match content more accurately.
+Set `user` in `docker-compose.yaml` to the `uid:gid` of `jfmo:media` (created above):
 
-### Setting up TMDB
+```bash
+id jfmo                # get uid
+getent group media     # get gid
+```
 
-1. Get an API key from [developers.themoviedb.org](https://developers.themoviedb.org)
-2. Provide your API key in one of these ways:
-   - Set the `TMDB_API_KEY` environment variable
-   - Use the `--tmdb-api-key` command line option
-   - Add it to your configuration file in the "tmdb" section
+**1. Set up files:**
 
-### How TMDB Integration Works
+```bash
+sudo mkdir -p /opt/jfmo
+cd /opt/jfmo
+sudo vim docker-compose.yaml
+```
 
-When processing media files, JFMO will:
-1. Search TMDB for the movie or TV show title
-2. If found, extract the TMDB ID and correct release year
-3. If multiple matches are found, use interactive mode to let you choose
-4. Add the TMDB ID to the filename in a format Jellyfin recognizes:
-   - For movies: `Title (Year) [tmdbid-12345].mkv`
-   - For series: `Series Name (Year) [tmdbid-67890]/Season 01/Series Name S01E01.mkv`
+Start as a background daemon (restarts automatically on reboot):
+
+```bash
+sudo docker compose up -d
+```
+
+Run once manually (e.g. to process a backlog):
+
+```bash
+# Dry-run preview — no files moved
+sudo docker compose run --rm jfmo run
+
+# Apply changes
+sudo docker compose run --rm jfmo run --apply
+```
+
+## Update
+
+### pipx
+
+```bash
+sudo pipx upgrade jfmo --global
+sudo systemctl restart jfmo
+```
+
+### Docker
+
+```bash
+sudo docker compose pull
+sudo docker compose up -d
+```
 
 ## Usage
 
-### Basic Usage
-
-Run in test mode first to see what changes would be made without modifying files:
-
-```bash
-# With a configuration file:
-jfmo --config ~/.config/jfmo/config.json --test
-
-# Or with default configuration locations:
-jfmo --test
+```
+jfmo run              # dry-run preview (no files moved)
+jfmo run --apply      # apply changes
+jfmo daemon           # watch downloads directory continuously
+jfmo --version
 ```
 
-When you're ready to make actual changes:
+## Naming
 
-```bash
-# Using sudo with explicit config path
-sudo $(which jfmo) --config ~/.config/jfmo/config.json
-```
+### Available tokens
 
-Root permissions are required to set proper file ownership.
+| Token             | Description                 | Example                     |
+| ----------------- | --------------------------- | --------------------------- |
+| `{title}`         | Media title                 | `Inception`                 |
+| `{year}`          | Release year                | `2010`                      |
+| `{tmdb_id}`       | TMDB numeric ID             | `27205`                     |
+| `{quality}`       | Resolution label            | `[1080p]`                   |
+| `{season}`        | Season number, zero-padded  | `01`                        |
+| `{episode}`       | Episode number, zero-padded | `04`                        |
+| `{source}`        | Release source              | `WEB-DL`, `BluRay`, `BDRip` |
+| `{codec}`         | Video codec                 | `x265`, `HEVC`, `AV1`       |
+| `{hdr}`           | HDR format                  | `HDR10`, `DV`, `DoVi`       |
+| `{service}`       | Streaming service           | `NF`, `AMZN`, `DSNP`        |
+| `{release_group}` | Release group name          | `LostFilm`, `NOOBDL`        |
 
-### Command Line Options
+Each pattern only accepts a specific subset of tokens:
 
-```
-Usage: jfmo [OPTIONS]
+| Pattern (`naming.`) | Allowed tokens                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `movie.file`        | `title`, `year`, `tmdb_id`, `quality`, `source`, `codec`, `hdr`, `service`, `release_group`   |
+| `tv.folder`         | `title`, `year`, `tmdb_id`                                                                    |
+| `tv.season`         | `season`                                                                                      |
+| `tv.file`           | `title`, `season`, `episode`, `quality`, `source`, `codec`, `hdr`, `service`, `release_group` |
 
-Options:
-  --version               Show version and exit
-  --test                  Run in test mode (no actual changes made)
-  --verbose               Show detailed log messages (default in test mode)
-  --quiet                 Suppress log messages
-  -h, --help              Show this help message
-
-Interactive Mode Options:
-  --non-interactive       Disable interactive mode (automatic selection of best match)
-  --semi-interactive      Only show interactive prompts for truly ambiguous matches
-
-Configuration File Options:
-  --config FILE           Path to configuration file
-  --generate-config FILE  Generate a template configuration file
-
-Directory Options:
-  --media-dir DIRECTORY   Base media directory
-  --downloads DIRECTORY   Downloads directory
-  --films DIRECTORY       Films directory
-  --series DIRECTORY      TV series directory
-
-File and Permission Options:
-  --user USERNAME         Media files owner
-  --group GROUPNAME       Media files group
-  --log FILEPATH          Log file path
-
-TMDB Integration Options:
-  --tmdb-api-key KEY      TMDB API key
-  --disable-tmdb          Disable TMDB integration
-```
-
-## Development and Testing
-
-JFMO includes a development script to set up a test environment for easy testing and development.
-
-
-### Project Structure
+### Example: before → after
 
 ```
-jfmo/
-├── __init__.py                # Package initialization and version
-├── __main__.py                # Main entry point
-├── cli.py                     # Command-line interface
-├── config.py                  # Configuration handler
-├── detectors/                 # Media detection modules
-│   ├── __init__.py
-│   ├── quality.py             # Quality detection
-│   ├── season_episode.py      # TV show season/episode detection
-│   └── year.py                # Year detection
-├── metadata/                  # Metadata providers
-│   ├── __init__.py
-│   └── tmdb.py                # TMDB integration
-├── processors/                # Media processors
-│   ├── __init__.py
-│   ├── media_processor.py     # Base processor class
-│   ├── movie_processor.py     # Movie processing
-│   ├── series_processor.py    # TV series processing
-│   └── directory_processor.py # Directory processing
-└── utils/                     # Utility modules
-    ├── __init__.py
-    ├── colors.py              # Terminal colors
-    ├── config_file.py         # Config file handling
-    ├── file_ops.py            # File operations
-    ├── interactive_ui.py      # Interactive UI
-    ├── logger.py              # Logging
-    ├── output_formatter.py    # Output formatting
-    └── transliteration.py     # Transliteration support
+downloads/
+├── Severance.S02E02.1080p.mkv
+├── The.Accountant.2.2024.2160p.mkv
+├── Podslushano.v.Rybinske.S01E01.2160p.mkv   ← Russian transliteration
+└── La Casa de Papel 3 - LostFilm [1080p]/
+
+films/
+└── The Accountant 2 (2024) [tmdbid-717559] - 2160p.mkv
+
+tv/
+├── Severance (2022) [tmdbid-95396]/
+│   └── Season 02/
+│       └── Severance S02E02 - 1080p.mkv
+├── Подслушано в Рыбинске (2024) [tmdbid-245083]/   ← converted to Cyrillic
+│   └── Season 01/
+│       └── Подслушано в Рыбинске S01E01 - 2160p.mkv
+└── La Casa de Papel (2017) [tmdbid-71446]/
+    └── Season 03/
+        └── La Casa de Papel S03E01 - 1080p.mkv
 ```
 
-### Setting up a Test Environment
+## Transliteration Detection
 
-```bash
-# Make the script executable
-chmod +x dev/setup_test_env.sh
+Most media organizers (Radarr, Sonarr, etc.) cannot handle files where the title is written in **Latin-script transliteration of Russian** — e.g. `Podslushano.v.Rybinske.S01.mkv` looks like English but is actually «Подслушано в Рыбинске».
 
-# Run the script to create a test environment
-./dev/setup_test_env.sh
-```
-
-This will create a `test_environment` directory with:
-- Sample movie files
-- Sample TV show files and directories
-- Test configuration with your current user permissions
-- Directory structure for testing
-
-### Using the Test Environment
-
-The test script will output commands to run JFMO with the test environment:
-
-```bash
-# Run in test mode (no actual changes)
-python3 -m jfmo --config ./test_environment/config/jfmo_test_config.json --test
-
-# Run with actual changes
-python3 -m jfmo --config ./test_environment/config/jfmo_test_config.json
-```
-
-Since the test environment uses your current user, you don't need to use `sudo` for testing.
-
-## Examples
-
-### Before Organization
+JFMO detects this automatically using a custom **character n-gram language model** trained to distinguish genuine English titles from Russian titles written in transliteration. When a transliterated title is detected, JFMO converts it back to Cyrillic before searching TMDB — resulting in a correct match instead of a failed lookup.
 
 ```
-/data/media/downloads/
-├── Severance.S02E02.1080p.rus.LostFilm.TV.mkv
-├── Podslushano.v.Rybinske.S01.2024.SDR.WEB-DL.2160p/
-├── The.Accountant.2.2024.2160p.HDTV.mkv
-└── La Casa de Papel 3 - LostFilm.TV [1080p]/
-    └── (various episode files)
+Podslushano.v.Rybinske.S01E01.mkv
+  detected: Russian transliteration
+  converted: Подслушано в Рыбинске
+  TMDB match: tmdbid-XXXXXX
+  → Подслушано в Рыбинске (2024) [tmdbid-XXXXXX]/Season 01/...
 ```
 
-### After Organization
+The model was trained on a custom dataset of ~2.5M titles (165k Russian + 2.4M English) built specifically for this project, achieving **93% accuracy** on a diverse test set of 334 cases.
 
-```
-/data/media/
-├── films/
-│   └── The Accountant 2 (2024) [tmdbid-717559] - [2160p].mkv
-└── series/
-    ├── La Casa de Papel (2017) [tmdbid-71446]/
-    │   └── Season 03/
-    │       ├── La Casa de Papel S03E01 - [1080p].mkv
-    │       └── ...
-    ├── Подслушано в Рыбинске (2024) [tmdbid-123456]/
-    │   └── Season 01/
-    │       ├── Подслушано в Рыбинске S01E01 - [2160p].mkv
-    │       └── ...
-    └── Severance (2022) [tmdbid-95396]/
-        └── Season 02/
-            ├── Severance S02E02 - [1080p].mkv
-            └── ...
-```
-
-## Transliteration Support
-
-JFMO automatically detects and converts Russian transliterated text back to Cyrillic script.
-
-This allows for accurate conversion of filenames like:
-- "Podslushano v Rybinske" → "Подслушано в Рыбинске"
-- "Tainstvennye Istorii" → "Таинственные Истории"
-
-## File Naming Convention
-
-JFMO uses the following naming conventions:
-
-### Movies
-```
-Title (Year) [tmdbid-ID] - [Quality].extension
-```
-
-### TV Series
-```
-Series Name (Year) [tmdbid-ID]/Season XX/Series Name SXXEXX - [Quality].extension
-```
-
-## Extending JFMO
-
-JFMO is built with a modular architecture that makes it easy to extend:
-
-```
-jfmo/
-├── detectors/       # Add new content detection algorithms
-├── processors/      # Add new media processing methods
-├── metadata/        # Add new metadata sources
-└── utils/           # Add new utility functions
-```
-
-## Troubleshooting
-
-- **Permission errors**: Make sure to run with `sudo` when not in test mode
-- **Files not detected**: Check if your file naming patterns match JFMO's detection patterns
-- **Transliteration issues**: Ensure the `transliterate` package is installed correctly
-- **TMDB integration issues**: Verify your API key and internet connection
-- **Check logs**: Examine the log file for detailed operation logs
-- **Configuration file issues**: Make sure your JSON file is valid
-- **pipx issues**: Try reinstalling with `pipx uninstall jfmo` followed by `pipx install jfmo`
+- Dataset: [stafloker/media-transliterated](https://www.kaggle.com/datasets/stafloker/media-transliterated) (Kaggle)
+- Inspired by: [Language Identification for Texts Written in Transliteration](https://ceur-ws.org/Vol-871/paper_2.pdf)
 
 ## Acknowledgments
 
-- [Jellyfin Media Server](https://jellyfin.org/) for their naming recommendations
-- [The Movie Database (TMDB)](https://www.themoviedb.org/) for their excellent API
-- [transliterate](https://pypi.org/project/transliterate/) for multilingual support
+- [Jellyfin](https://jellyfin.org/) · [TMDB](https://www.themoviedb.org/) · [transliterate](https://pypi.org/project/transliterate/)

@@ -1,0 +1,28 @@
+# Logging
+logging:
+  log_level: INFO  # DEBUG | INFO | WARNING | ERROR
+
+# Daemon mode
+daemon:
+  interval: 30  # seconds between checks
+
+# Directories
+directories:
+  downloads:
+    path: /data/media/downloads
+  media:
+    movies: /data/media/movies
+    tv: /data/media/tv
+
+# Naming format
+naming:
+  movie:
+    file: "{title} ({year}) [tmdbid-{tmdb_id}] - {quality}"
+  tv:
+    folder: "{title} ({year}) [tmdbid-{tmdb_id}]"
+    season: "Season {season}"
+    file: "{title} S{season}E{episode} - {quality}"
+
+# TMDB metadata (leave api_key empty to disable)
+tmdb:
+  api_key: ""  # get from https://www.themoviedb.org/settings/api

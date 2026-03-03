@@ -1,0 +1,18 @@
+services:
+  jfmo:
+    image: ghcr.io/stafloker/jfmo:latest
+    container_name: jfmo
+    # Run as the same user:group that owns your media directories on the host.
+    # This ensures created files are owned by the correct group (e.g. :media).
+    # Find your uid/gid with: id <username>  or  getent group media
+    user: "1000:1000"
+    volumes:
+      # Configuration file (copy from config.template.yaml and edit)
+      - /path/to/config.yaml:/etc/jfmo/config.yaml:ro
+      # Media directories — all must be on the same filesystem (required for hard links)
+      - /path/to/downloads:/downloads
+      - /path/to/movies:/movies
+      - /path/to/tv:/tv
+      # Optional: persist logs
+      - /path/to/logs:/var/log/jfmo
+    restart: unless-stopped
