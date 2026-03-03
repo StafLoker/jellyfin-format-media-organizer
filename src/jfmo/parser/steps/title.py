@@ -1,6 +1,7 @@
 import re
 
 from ..context import ParseContext
+from ..tokens import Token
 
 _BRACKETS = re.compile(r"\[[^\]]*\]")  # [NOOBDL], [720p], [rus]
 _PARENS = re.compile(r"\([^)]*\)")  # (2024), (Director's Cut)
@@ -19,5 +20,5 @@ class TitleStep:
         name = _DATE_PATTERN.sub("", name)
         name = _SEPARATORS.sub(" ", name)
         name = _WHITESPACE.sub(" ", name).strip()
-        ctx.tokens["title"] = name
+        ctx.tokens[Token.TITLE] = name
         return ctx

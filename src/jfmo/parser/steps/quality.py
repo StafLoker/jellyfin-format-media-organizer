@@ -1,6 +1,7 @@
 import re
 
 from ..context import ParseContext
+from ..tokens import Token
 
 _STANDARD = re.compile(r"(480|720|1080|2160|4320)p", re.IGNORECASE)  # 720p, 1080p, 2160p, 4320p
 _CYRILLIC_P = re.compile(r"(240|352|480|576|720|1080|2160|4320)р")  # 1080р (Cyrillic р)
@@ -23,10 +24,9 @@ _HD_LABELS = [
     (re.compile(r"\bHD\b", re.IGNORECASE), "720p"),  # HD
 ]
 
-# Strips quality tag and everything after: BluRay, WEB-DL, x265, HDR, release groups, etc.
-_QUALITY_AND_TAGS = re.compile(
+# Strips quality marker and everything after it (residual audio tags, language codes, etc.)
+_QUALITY_AND_TAIL = re.compile(
     r"\b(480|720|1080|2160|4320)[pр]\b.*"
-    r"|\b(WEB|WEB-DL|WEBDL|HDR|SDR|BDRip|BluRay|x264|x265|HEVC|H264|H265)\b.*"
     r"|\b(SD|HD|FHD|QHD|UHD|4K|8K)\b.*"
     r"|[0-9]{3,4}\s*[xX]\s*[0-9]{3,4}.*",
     re.IGNORECASE,
@@ -60,6 +60,6 @@ class QualityStep:
     def process(self, ctx: ParseContext) -> ParseContext:
         quality = _detect_quality(ctx.working_name)
         if quality:
-            ctx.tokens["quality"] = quality
-            ctx.working_name = _QUALITY_AND_TAGS.sub("", ctx.working_name)
+            ctx.tokens[Token.QUALITY] = quality
+            ctx.working_name = _QUALITY_AND_TAIL.sub("", ctx.working_name)
         return ctx

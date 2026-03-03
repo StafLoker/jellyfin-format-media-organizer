@@ -7,11 +7,16 @@ from jfmo.formatter import Formatter
 from jfmo.metadata.tmdb import TMDBClient
 from jfmo.parser import Parser
 from jfmo.parser.steps import (
+    CodecStep,
     EpisodeStep,
     ExtensionStep,
+    HdrStep,
     MediaTypeStep,
     QualityStep,
+    ReleaseGroupStep,
     SeasonStep,
+    ServiceStep,
+    SourceStep,
     TitleStep,
     YearStep,
 )
@@ -20,14 +25,14 @@ from jfmo.processors import MovieProcessor, TvProcessor
 
 @pytest.fixture
 def media_dirs(tmp_path):
-    films = tmp_path / "films"
+    movies = tmp_path / "movies"
     tv = tmp_path / "tv"
-    films.mkdir()
+    movies.mkdir()
     tv.mkdir()
-    config.FILMS_DIR = str(films)
+    config.MOVIES_DIR = str(movies)
     config.TV_DIR = str(tv)
     config.DRY_RUN = False
-    return films, tv
+    return movies, tv
 
 
 @pytest.fixture
@@ -45,6 +50,11 @@ def formatter(mock_tmdb):
         SeasonStep(),
         EpisodeStep(),
         YearStep(),
+        SourceStep(),
+        CodecStep(),
+        HdrStep(),
+        ServiceStep(),
+        ReleaseGroupStep(),
         QualityStep(),
         MediaTypeStep(),
         TitleStep(),

@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 
 from ..context import ParseContext
+from ..tokens import Token
 
 _YEAR_PATTERN = re.compile(r"\b(19\d{2}|20\d{2})\b")  # 1900–2099
 _CURRENT_YEAR = datetime.now().year
@@ -23,6 +24,6 @@ class YearStep:
     def process(self, ctx: ParseContext) -> ParseContext:
         year = _detect_year(ctx.working_name)
         if year:
-            ctx.tokens["year"] = year
+            ctx.tokens[Token.YEAR] = year
             ctx.working_name = _remove_year(ctx.working_name, year)
         return ctx

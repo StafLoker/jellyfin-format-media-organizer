@@ -11,13 +11,13 @@ directories:
   downloads:
     path: /data/media/downloads
   media:
-    films: /data/media/films
+    movies: /data/media/movies
     tv: /data/media/tv
 
 # Naming format (token-based: {title}, {year}, {tmdb_id}, {season}, {episode}, {quality})
 # Missing tokens are omitted cleanly with surrounding delimiters
 naming:
-  movies:
+  movie:
     file: "{title} ({year}) [tmdbid-{tmdb_id}] - {quality}"
   tv:
     folder: "{title} ({year}) [tmdbid-{tmdb_id}]"

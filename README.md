@@ -39,9 +39,10 @@ sudo pipx install jfmo --global
 
 **2. Create a system user and add it to the `media` group:**
 
+Create `media` group before.
+
 ```bash
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin jfmo
-sudo groupadd -f media
 sudo usermod -aG media jfmo
 ```
 
@@ -54,10 +55,12 @@ sudo chmod -R g+rw /data/media
 
 **3. Set up the config:**
 
+Default config path: `/etc/jfmo/config.yaml`. See `config.template.yaml` for all options.
+
 ```bash
 sudo mkdir -p /etc/jfmo
-sudo cp config.template.yaml /etc/jfmo/config.yaml
-sudo nano /etc/jfmo/config.yaml
+sudo vim /etc/jfmo/config.yaml
+sudo chown -R jfmo:jfmo /etc/jfmo
 ```
 
 **4. Create the systemd unit `/etc/systemd/system/jfmo.service`:**
@@ -90,18 +93,21 @@ sudo systemctl status jfmo
 **Run once manually** (without stopping the daemon):
 
 ```bash
-sudo -u jfmo jfmo run --apply
+sudo -u jfmo -g media jfmo run --apply
 ```
 
 ### Option 2 — Docker
 
 Copy the compose template and edit the volume paths and config:
 
+Default config path: `/etc/jfmo/config.yaml`. See `config.template.yaml` for all options.
+See example of docker compose file in `docker-compose.template.yaml`.
+
 ```bash
-cp docker-compose.template.yaml docker-compose.yaml
-cp config.template.yaml config.yaml
-nano config.yaml          # set directories, TMDB key, etc.
-nano docker-compose.yaml  # set volume paths to match your host
+sudo mkdir -p /opt/jfmo
+cd /opt/jfmo
+sudo vim docker-compose.yaml
+sudo vim config.yaml
 ```
 
 Start as a background daemon (restarts automatically on reboot):
@@ -129,11 +135,32 @@ jfmo daemon           # watch downloads directory continuously
 jfmo --version
 ```
 
-## Configuration
-
-Default config path: `/etc/jfmo/config.yaml`. See `config.template.yaml` for all options.
-
 ## Naming
+
+### Available tokens
+
+| Token             | Description                 | Example                     |
+| ----------------- | --------------------------- | --------------------------- |
+| `{title}`         | Media title                 | `Inception`                 |
+| `{year}`          | Release year                | `2010`                      |
+| `{tmdb_id}`       | TMDB numeric ID             | `27205`                     |
+| `{quality}`       | Resolution label            | `[1080p]`                   |
+| `{season}`        | Season number, zero-padded  | `01`                        |
+| `{episode}`       | Episode number, zero-padded | `04`                        |
+| `{source}`        | Release source              | `WEB-DL`, `BluRay`, `BDRip` |
+| `{codec}`         | Video codec                 | `x265`, `HEVC`, `AV1`       |
+| `{hdr}`           | HDR format                  | `HDR10`, `DV`, `DoVi`       |
+| `{service}`       | Streaming service           | `NF`, `AMZN`, `DSNP`        |
+| `{release_group}` | Release group name          | `LostFilm`, `NOOBDL`        |
+
+Each pattern only accepts a specific subset of tokens:
+
+| Pattern (`naming.`) | Allowed tokens                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `movie.file`        | `title`, `year`, `tmdb_id`, `quality`, `source`, `codec`, `hdr`, `service`, `release_group`   |
+| `tv.folder`         | `title`, `year`, `tmdb_id`                                                                    |
+| `tv.season`         | `season`                                                                                      |
+| `tv.file`           | `title`, `season`, `episode`, `quality`, `source`, `codec`, `hdr`, `service`, `release_group` |
 
 Tokens with no value are removed cleanly along with their surrounding delimiters:
 

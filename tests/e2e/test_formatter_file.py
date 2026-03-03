@@ -14,7 +14,7 @@ def _src(tmp_path, filename: str) -> Path:
 
 
 def test_tv_file(formatter, media_dirs, mock_tmdb, tmp_path):
-    films_dir, tv_dir = media_dirs
+    movies_dir, tv_dir = media_dirs
     mock_tmdb.search_tv.return_value = (2316, "2005")
     src = _src(tmp_path, "The.Office.S03E07.720p.mkv")
 
@@ -58,39 +58,39 @@ def test_lostfilm_tags_stripped(formatter, media_dirs, mock_tmdb, tmp_path):
 
 
 def test_movie_file(formatter, media_dirs, mock_tmdb, tmp_path):
-    films_dir, _ = media_dirs
+    movies_dir, _ = media_dirs
     mock_tmdb.search_movie.return_value = (27205, "2010")
     src = _src(tmp_path, "Inception.2010.1080p.BluRay.mkv")
 
     result = formatter.format_file(str(src))
 
     assert result is not None and result.success is True
-    dest = films_dir / "Inception (2010) [tmdbid-27205] - [1080p].mkv"
+    dest = movies_dir / "Inception (2010) [tmdbid-27205] - [1080p].mkv"
     assert dest.exists()
     assert dest.stat().st_ino == src.stat().st_ino
 
 
 def test_movie_tmdb_provides_year(formatter, media_dirs, mock_tmdb, tmp_path):
     """TMDB provides year when absent from filename."""
-    films_dir, _ = media_dirs
+    movies_dir, _ = media_dirs
     mock_tmdb.search_movie.return_value = (374720, "2017")
     src = _src(tmp_path, "Dunkirk.1080p.mkv")
 
     formatter.format_file(str(src))
 
-    dest = films_dir / "Dunkirk (2017) [tmdbid-374720] - [1080p].mkv"
+    dest = movies_dir / "Dunkirk (2017) [tmdbid-374720] - [1080p].mkv"
     assert dest.exists()
 
 
 def test_movie_no_tmdb(formatter, media_dirs, mock_tmdb, tmp_path):
     """Movie without TMDB match — no tmdb_id in filename."""
-    films_dir, _ = media_dirs
+    movies_dir, _ = media_dirs
     mock_tmdb.search_movie.return_value = (None, "2010")
     src = _src(tmp_path, "Inception.2010.1080p.mkv")
 
     formatter.format_file(str(src))
 
-    dest = films_dir / "Inception (2010) - [1080p].mkv"
+    dest = movies_dir / "Inception (2010) - [1080p].mkv"
     assert dest.exists()
 
 
@@ -101,13 +101,13 @@ def test_movie_no_tmdb(formatter, media_dirs, mock_tmdb, tmp_path):
 
 def test_ambiguous_returns_none(formatter, media_dirs, tmp_path):
     """Date-based filename is ambiguous → skipped, returns None."""
-    films_dir, tv_dir = media_dirs
+    movies_dir, tv_dir = media_dirs
     src = _src(tmp_path, "Show.2024-01-15.mkv")
 
     result = formatter.format_file(str(src))
 
     assert result is None
-    assert not any(films_dir.iterdir())
+    assert not any(movies_dir.iterdir())
     assert not any(tv_dir.iterdir())
 
 
@@ -116,11 +116,11 @@ def test_dry_run(formatter, media_dirs, mock_tmdb, tmp_path):
     from jfmo.config import config
 
     config.DRY_RUN = True
-    films_dir, _ = media_dirs
+    movies_dir, _ = media_dirs
     mock_tmdb.search_movie.return_value = (27205, "2010")
     src = _src(tmp_path, "Inception.2010.1080p.mkv")
 
     result = formatter.format_file(str(src))
 
     assert result is not None and result.success is True
-    assert not any(films_dir.iterdir())
+    assert not any(movies_dir.iterdir())
