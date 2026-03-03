@@ -20,7 +20,7 @@ def test_tv_file(formatter, media_dirs, mock_tmdb, tmp_path):
 
     result = formatter.format_file(str(src))
 
-    assert result is True
+    assert result is not None and result.success is True
     dest = tv_dir / "The Office (2005) [tmdbid-2316]" / "Season 03" / "The Office S03E07 - [720p].mkv"
     assert dest.exists()
     assert dest.stat().st_ino == src.stat().st_ino
@@ -34,7 +34,7 @@ def test_tv_no_tmdb(formatter, media_dirs, mock_tmdb, tmp_path):
 
     result = formatter.format_file(str(src))
 
-    assert result is True
+    assert result is not None and result.success is True
     dest = tv_dir / "Unknown Show" / "Season 01" / "Unknown Show S01E01.mkv"
     assert dest.exists()
 
@@ -64,7 +64,7 @@ def test_movie_file(formatter, media_dirs, mock_tmdb, tmp_path):
 
     result = formatter.format_file(str(src))
 
-    assert result is True
+    assert result is not None and result.success is True
     dest = films_dir / "Inception (2010) [tmdbid-27205] - [1080p].mkv"
     assert dest.exists()
     assert dest.stat().st_ino == src.stat().st_ino
@@ -122,5 +122,5 @@ def test_dry_run(formatter, media_dirs, mock_tmdb, tmp_path):
 
     result = formatter.format_file(str(src))
 
-    assert result is True
+    assert result is not None and result.success is True
     assert not any(films_dir.iterdir())

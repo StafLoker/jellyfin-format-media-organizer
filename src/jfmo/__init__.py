@@ -9,6 +9,7 @@ from .config import config
 from .daemon import FileWatcher
 from .di import Container
 from .exceptions import DirectoryNotFoundError, TransliterationModelError
+from .utils.cli_output import print_dry_run_banner, print_entry_header, print_header, print_result, print_summary
 from .utils.fs.file_ops import is_video_file
 
 EXIT_SUCCESS = 0
@@ -22,13 +23,48 @@ def _run(apply: bool) -> None:
     config.DRY_RUN = not apply
     container = Container()
 
-    for name in os.listdir(config.DOWNLOADS_DIR):
+    show_output = not config.DAEMON_MODE
+
+    video_entries = [
+        name
+        for name in os.listdir(config.DOWNLOADS_DIR)
+        if os.path.isdir(os.path.join(config.DOWNLOADS_DIR, name))
+        or (os.path.isfile(os.path.join(config.DOWNLOADS_DIR, name)) and is_video_file(name))
+    ]
+
+    if show_output and config.DRY_RUN:
+        print_dry_run_banner()
+    if show_output:
+        print_header(len(video_entries))
+
+    all_results = []
+    skipped_count = 0
+
+    for name in video_entries:
         path = os.path.join(config.DOWNLOADS_DIR, name)
 
+        if show_output:
+            print_entry_header(name, is_dir=os.path.isdir(path))
+
         if os.path.isdir(path):
-            container.formatter.format_directory(path)
-        elif os.path.isfile(path) and is_video_file(name):
-            container.formatter.format_file(path)
+            results = container.formatter.format_directory(path)
+            all_results.extend(results)
+            if show_output:
+                for r in results:
+                    print_result(r)
+        else:
+            result = container.formatter.format_file(path)
+            if result is None:
+                skipped_count += 1
+            else:
+                all_results.append(result)
+                if show_output:
+                    print_result(result)
+
+    if show_output:
+        print_summary(all_results, skipped_count, config.DRY_RUN)
+        if config.DRY_RUN:
+            print_dry_run_banner()
 
 
 def _run_daemon() -> None:

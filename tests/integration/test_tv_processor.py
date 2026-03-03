@@ -59,7 +59,7 @@ def test_full_metadata(tv_dir, source_file, mock_tmdb):
 
     result = TvProcessor(mock_tmdb).process(ctx)
 
-    assert result is True
+    assert result.success is True
     dest = tv_dir / "Breaking Bad (2008) [tmdbid-1396]" / "Season 01" / "Breaking Bad S01E05 - [1080p].mkv"
     assert dest.exists()
     assert dest.stat().st_ino == src.stat().st_ino  # hard link
@@ -97,7 +97,7 @@ def test_no_tmdb_match(tv_dir, source_file):
 
     result = TvProcessor(tmdb).process(ctx)
 
-    assert result is True
+    assert result.success is True
     dest = tv_dir / "Unknown Show" / "Season 01" / "Unknown Show S01E01.mkv"
     assert dest.exists()
 
@@ -141,7 +141,7 @@ def test_dry_run(tv_dir, source_file, mock_tmdb):
 
     result = TvProcessor(mock_tmdb).process(ctx)
 
-    assert result is True
+    assert result.success is True
     assert not any(tv_dir.iterdir())  # no dirs or files created
 
 
@@ -155,4 +155,4 @@ def test_source_missing(tv_dir, mock_tmdb):  # noqa: ARG001
 
     result = TvProcessor(mock_tmdb).process(ctx)
 
-    assert result is False
+    assert result.success is False

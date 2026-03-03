@@ -4,6 +4,7 @@ from loguru import logger
 
 from .parser import MediaType, ParseContext, Parser
 from .processors.movie_processor import MovieProcessor
+from .processors.result import ProcessResult
 from .processors.tv_processor import TvProcessor
 from .transliteration import Transliterator
 from .utils.fs.file_ops import is_video_file
@@ -15,7 +16,7 @@ class Formatter:
         self._movie = movie_processor
         self._tv = tv_processor
 
-    def format_file(self, filepath: str) -> bool | None:
+    def format_file(self, filepath: str) -> ProcessResult | None:
         ctx = self._parser.parse(filepath)
         if ctx.skip_reason:
             logger.info(f"Skipped {os.path.basename(filepath)}: {ctx.skip_reason}")
@@ -25,7 +26,7 @@ class Formatter:
             return self._tv.process(ctx)
         return self._movie.process(ctx)
 
-    def format_directory(self, dirpath: str) -> bool:
+    def format_directory(self, dirpath: str) -> list[ProcessResult]:
         dir_name = os.path.basename(dirpath)
 
         # Parse directory name through the pipeline to extract season and title
@@ -33,7 +34,7 @@ class Formatter:
         dir_season = dir_ctx.tokens.get("season")
         dir_title = dir_ctx.tokens.get("title", "")
 
-        results = []
+        results: list[ProcessResult] = []
         for root, _, files in os.walk(dirpath):
             for file in files:
                 if is_video_file(file):
@@ -51,4 +52,4 @@ class Formatter:
                         ctx.tokens["title"] = Transliterator.transliterate_text(ctx.tokens.get("title", ""))
                     results.append(self._tv.process(ctx))
 
-        return any(results)
+        return results

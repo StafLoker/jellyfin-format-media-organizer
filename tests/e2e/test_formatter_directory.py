@@ -22,7 +22,7 @@ def test_season_from_dirname(formatter, media_dirs, mock_tmdb, tmp_path):
 
     result = formatter.format_directory(str(dirpath))
 
-    assert result is True
+    assert any(r.success for r in result)
     season_dir = tv_dir / "Breaking Bad (2008) [tmdbid-1396]" / "Season 02"
     assert season_dir.is_dir()
     assert len(list(season_dir.iterdir())) == 3
@@ -73,7 +73,7 @@ def test_ambiguous_file_skipped(formatter, media_dirs, mock_tmdb, tmp_path):
 
     result = formatter.format_directory(str(dirpath))
 
-    assert result is True  # at least one succeeded
+    assert any(r.success for r in result)  # at least one succeeded
     video_files = list(tv_dir.rglob("*.mkv"))
     assert len(video_files) == 1  # only the unambiguous one
 
@@ -90,7 +90,7 @@ def test_empty_directory(formatter, media_dirs, tmp_path):  # noqa: ARG001
 
     result = formatter.format_directory(str(dirpath))
 
-    assert result is False
+    assert result == []
 
 
 # ---------------------------------------------------------------------------
@@ -109,5 +109,5 @@ def test_dry_run(formatter, media_dirs, mock_tmdb, tmp_path):
 
     result = formatter.format_directory(str(dirpath))
 
-    assert result is True
+    assert any(r.success for r in result)
     assert not any(tv_dir.iterdir())

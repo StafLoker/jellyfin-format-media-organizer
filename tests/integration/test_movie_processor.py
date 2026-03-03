@@ -57,7 +57,7 @@ def test_all_tokens(films_dir, source_file, mock_tmdb):
 
     result = MovieProcessor(mock_tmdb).process(ctx)
 
-    assert result is True
+    assert result.success is True
     dest = films_dir / "Inception (2010) [tmdbid-27205] - [1080p].mkv"
     assert dest.exists()
     assert dest.stat().st_ino == src.stat().st_ino  # hard link
@@ -84,7 +84,7 @@ def test_no_tmdb_match(films_dir, source_file):
 
     result = MovieProcessor(tmdb).process(ctx)
 
-    assert result is True
+    assert result.success is True
     dest = films_dir / "Obscure Film (2023).mkv"
     assert dest.exists()
 
@@ -126,7 +126,7 @@ def test_dry_run(films_dir, source_file, mock_tmdb):
 
     result = MovieProcessor(mock_tmdb).process(ctx)
 
-    assert result is True
+    assert result.success is True
     assert not any(films_dir.iterdir())  # no file created
 
 
@@ -140,4 +140,4 @@ def test_source_missing(films_dir, mock_tmdb):  # noqa: ARG001
 
     result = MovieProcessor(mock_tmdb).process(ctx)
 
-    assert result is False
+    assert result.success is False

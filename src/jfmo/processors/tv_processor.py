@@ -7,13 +7,14 @@ from ..metadata import TMDBClient
 from ..parser import ParseContext
 from ..utils.fs.file_ops import link_file
 from ..utils.token_formatter import format_tokens
+from .result import MediaKind, ProcessResult
 
 
 class TvProcessor:
     def __init__(self, tmdb_client: TMDBClient) -> None:
         self._tmdb = tmdb_client
 
-    def process(self, ctx: ParseContext) -> bool:
+    def process(self, ctx: ParseContext) -> ProcessResult:
         title = ctx.tokens.get("title", "")
         year = ctx.tokens.get("year")
 
@@ -34,4 +35,10 @@ class TvProcessor:
         dest = os.path.join(config.TV_DIR, tv_dir, season_dir, filename)
 
         logger.info(f"TV: {title} -> {filename}")
-        return link_file(ctx.filepath, dest, dry_run=config.DRY_RUN)
+        success = link_file(ctx.filepath, dest, dry_run=config.DRY_RUN)
+        return ProcessResult(
+            source=os.path.basename(ctx.filepath),
+            dest=filename,
+            media_kind=MediaKind.TV,
+            success=success,
+        )
