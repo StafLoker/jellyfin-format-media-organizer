@@ -62,12 +62,13 @@ class Config:
     def _setup_logger(self) -> None:
         logger.remove()
 
-        logger.add(
-            sys.stderr,
-            colorize=True,
-            level=self.LOG_LEVEL,
-            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>",
-        )
+        if self.DAEMON_MODE:
+            logger.add(
+                sys.stderr,
+                colorize=True,
+                level=self.LOG_LEVEL,
+                format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>",
+            )
 
         log_dir = Path("/var/log/jfmo")
         try:
