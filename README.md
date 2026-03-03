@@ -29,20 +29,10 @@ Automatically organizes and renames media files according to [Jellyfin's naming 
 
 ## Installation
 
-### Option 1 — pip / pipx
-
-
-**1. Install the package:**
+**1. Create a system user and add it to the `media` group:**
 
 ```bash
-sudo pipx install jfmo --global
-```
-
-**2. Create a system user and add it to the `media` group:**
-
-Create `media` group before.
-
-```bash
+sudo groupadd media
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin jfmo
 sudo usermod -aG media jfmo
 ```
@@ -54,7 +44,7 @@ sudo chown -R :media /data/media
 sudo chmod -R g+rw /data/media
 ```
 
-**3. Set up the config:**
+**2. Set up the config:**
 
 Default config path: `/etc/jfmo/config.yaml`. See `config.template.yaml` for all options.
 
@@ -62,6 +52,14 @@ Default config path: `/etc/jfmo/config.yaml`. See `config.template.yaml` for all
 sudo mkdir -p /etc/jfmo
 sudo vim /etc/jfmo/config.yaml
 sudo chown -R jfmo:jfmo /etc/jfmo
+```
+
+### Option 1 — pip / pipx
+
+**3. Install the package:**
+
+```bash
+sudo pipx install jfmo --global
 ```
 
 **4. Create the systemd unit `/etc/systemd/system/jfmo.service`:**
@@ -99,32 +97,37 @@ sudo -u jfmo -g media jfmo run --apply
 
 ### Option 2 — Docker
 
-Copy the compose template and edit the volume paths and config:
-
-Default config path: `/etc/jfmo/config.yaml`. See `config.template.yaml` for all options.
 See example of docker compose file in `docker-compose.template.yaml`.
+
+Set `user` in `docker-compose.yaml` to the `uid:gid` of `jfmo:media` (created above):
+
+```bash
+id jfmo                # get uid
+getent group media     # get gid
+```
+
+**1. Set up files:**
 
 ```bash
 sudo mkdir -p /opt/jfmo
 cd /opt/jfmo
 sudo vim docker-compose.yaml
-sudo vim config.yaml
 ```
 
 Start as a background daemon (restarts automatically on reboot):
 
 ```bash
-docker compose up -d
+sudo docker compose up -d
 ```
 
 Run once manually (e.g. to process a backlog):
 
 ```bash
 # Dry-run preview — no files moved
-docker compose run --rm jfmo run
+sudo docker compose run --rm jfmo run
 
 # Apply changes
-docker compose run --rm jfmo run --apply
+sudo docker compose run --rm jfmo run --apply
 ```
 
 ## Update
@@ -139,8 +142,8 @@ sudo systemctl restart jfmo
 ### Docker
 
 ```bash
-docker compose pull
-docker compose up -d
+sudo docker compose pull
+sudo docker compose up -d
 ```
 
 ## Usage
@@ -178,16 +181,6 @@ Each pattern only accepts a specific subset of tokens:
 | `tv.folder`         | `title`, `year`, `tmdb_id`                                                                    |
 | `tv.season`         | `season`                                                                                      |
 | `tv.file`           | `title`, `season`, `episode`, `quality`, `source`, `codec`, `hdr`, `service`, `release_group` |
-
-Tokens with no value are removed cleanly along with their surrounding delimiters:
-
-```
-# tmdb_id unknown:
-"{title} ({year}) [tmdbid-{tmdb_id}]" → "Inception (2010)"
-
-# quality unknown:
-"{title} S{season}E{episode} - {quality}" → "Breaking Bad S01E05"
-```
 
 ### Example: before → after
 

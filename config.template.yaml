@@ -14,8 +14,7 @@ directories:
     movies: /data/media/movies
     tv: /data/media/tv
 
-# Naming format (token-based: {title}, {year}, {tmdb_id}, {season}, {episode}, {quality})
-# Missing tokens are omitted cleanly with surrounding delimiters
+# Naming format
 naming:
   movie:
     file: "{title} ({year}) [tmdbid-{tmdb_id}] - {quality}"
