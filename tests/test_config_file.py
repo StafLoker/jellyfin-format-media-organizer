@@ -12,7 +12,7 @@ def write_yaml(path, data):
 def _make_dirs(tmp_path):
     """Create temp directories to satisfy validation."""
     d = tmp_path / "downloads"
-    f = tmp_path / "films"
+    f = tmp_path / "movies"
     t = tmp_path / "tv"
     d.mkdir()
     f.mkdir()
@@ -26,7 +26,7 @@ def _base_data(tmp_path):
     return {
         "directories": {
             "downloads": {"path": dl},
-            "media": {"films": fl, "tv": tv},
+            "media": {"movies": fl, "tv": tv},
         },
         "daemon": {"interval": 60},
     }
@@ -61,10 +61,10 @@ def test_load_directories(tmp_path):
     config.load(str(cfg))
 
     dl = data["directories"]["downloads"]["path"]
-    fl = data["directories"]["media"]["films"]
+    fl = data["directories"]["media"]["movies"]
     tv = data["directories"]["media"]["tv"]
     assert dl == config.DOWNLOADS_DIR
-    assert fl == config.FILMS_DIR
+    assert fl == config.MOVIES_DIR
     assert tv == config.TV_DIR
 
 
@@ -115,7 +115,7 @@ def test_load_logging(tmp_path):
 def test_load_naming_tokens(tmp_path):
     data = _base_data(tmp_path)
     data["naming"] = {
-        "movies": {"file": "{title} ({year})"},
+        "movie": {"file": "{title} ({year})"},
         "tv": {
             "folder": "{title} ({year})",
             "season": "Season {season}",
@@ -134,10 +134,10 @@ def test_load_naming_tokens(tmp_path):
 def test_load_naming_invalid_token_in_movie(tmp_path):
     """episode token is not valid in movie file pattern."""
     data = _base_data(tmp_path)
-    data["naming"] = {"movies": {"file": "{title} {episode}"}}
+    data["naming"] = {"movie": {"file": "{title} {episode}"}}
     cfg = tmp_path / "config.yaml"
     write_yaml(cfg, data)
-    with pytest.raises(ValueError, match="naming.movies.file"):
+    with pytest.raises(ValueError, match="naming.movie.file"):
         config.load(str(cfg))
 
 
@@ -195,7 +195,7 @@ def test_validate_missing_directories(tmp_path):
     data = {
         "directories": {
             "downloads": {"path": "/nonexistent/downloads"},
-            "media": {"films": "/nonexistent/films", "tv": "/nonexistent/tv"},
+            "media": {"movies": "/nonexistent/films", "tv": "/nonexistent/tv"},
         },
         "daemon": {"interval": 60},
     }

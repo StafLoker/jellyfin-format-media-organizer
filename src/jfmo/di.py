@@ -3,11 +3,16 @@ from .formatter import Formatter
 from .metadata import TMDBClient
 from .parser import Parser
 from .parser.steps import (
+    CodecStep,
     EpisodeStep,
     ExtensionStep,
+    HdrStep,
     MediaTypeStep,
     QualityStep,
+    ReleaseGroupStep,
     SeasonStep,
+    ServiceStep,
+    SourceStep,
     TitleStep,
     YearStep,
 )
@@ -23,6 +28,11 @@ class Container:
             SeasonStep(),
             EpisodeStep(),
             YearStep(),
+            SourceStep(),
+            CodecStep(),
+            HdrStep(),
+            ServiceStep(),
+            ReleaseGroupStep(),
             QualityStep(),
             MediaTypeStep(),
             TitleStep(),

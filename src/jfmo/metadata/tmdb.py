@@ -11,6 +11,16 @@ class TMDBClient:
 
         if not self.api_key:
             logger.warning("TMDB API key not configured. TMDB integration disabled.")
+        else:
+            self._validate_api_key()
+
+    def _validate_api_key(self) -> None:
+        result = self._make_request("authentication")
+        if result and result.get("success"):
+            logger.info("TMDB API key validated successfully.")
+        else:
+            logger.error("TMDB API key is invalid. TMDB integration disabled.")
+            self.api_key = None
 
     def _cache_get(self, title: str, year: str | None) -> tuple[int | None, str | None] | None:
         return self._cache.get(f"{title}_{year or ''}")

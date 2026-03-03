@@ -68,7 +68,6 @@ def _run(apply: bool) -> None:
 
 
 def _run_daemon() -> None:
-    config.DAEMON_MODE = True
     container = Container()
     watcher = FileWatcher(config.DOWNLOADS_DIR, config.DAEMON_INTERVAL_SEC, container.formatter)
 
@@ -94,6 +93,7 @@ def main():
         sys.exit(EXIT_SUCCESS)
 
     try:
+        config.DAEMON_MODE = command == "daemon"
         config.load(cli.read_config_path())
 
         if command == "daemon":

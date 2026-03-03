@@ -10,8 +10,9 @@
 
 <div align="center">
   <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases"><img src="https://img.shields.io/github/release-pre/StafLoker/jellyfin-format-media-organizer.svg?style=flat" alt="latest version"/></a>
-  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI/CD Build"/></a>
-  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml/badge.svg?branch=main" alt="Tests"/></a>
+  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/></a>
+  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/release.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/release.yml/badge.svg" alt="Release"/></a>
+  <a href="https://pypi.org/project/jfmo/"><img src="https://img.shields.io/pypi/dm/jfmo?style=flat&label=PyPI%20downloads" alt="PyPI downloads"/></a>
 </div>
 
 <br>
@@ -28,20 +29,11 @@ Automatically organizes and renames media files according to [Jellyfin's naming 
 
 ## Installation
 
-### Option 1 — pip / pipx
-
-
-**1. Install the package:**
+**1. Create a system user and add it to the `media` group:**
 
 ```bash
-pipx install jfmo
-```
-
-**2. Create a system user and add it to the `media` group:**
-
-```bash
+sudo groupadd media
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin jfmo
-sudo groupadd -f media
 sudo usermod -aG media jfmo
 ```
 
@@ -52,12 +44,22 @@ sudo chown -R :media /data/media
 sudo chmod -R g+rw /data/media
 ```
 
-**3. Set up the config:**
+**2. Set up the config:**
+
+Default config path: `/etc/jfmo/config.yaml`. See [`config.template.yaml`](config.template.yaml) for all options.
 
 ```bash
 sudo mkdir -p /etc/jfmo
-sudo cp config.template.yaml /etc/jfmo/config.yaml
-sudo nano /etc/jfmo/config.yaml
+sudo vim /etc/jfmo/config.yaml
+sudo chown -R jfmo:jfmo /etc/jfmo
+```
+
+### Option 1 — pip / pipx
+
+**3. Install the package:**
+
+```bash
+sudo pipx install jfmo --global
 ```
 
 **4. Create the systemd unit `/etc/systemd/system/jfmo.service`:**
@@ -90,34 +92,58 @@ sudo systemctl status jfmo
 **Run once manually** (without stopping the daemon):
 
 ```bash
-sudo -u jfmo jfmo run --apply
+sudo -u jfmo -g media jfmo run --apply
 ```
 
 ### Option 2 — Docker
 
-Copy the compose template and edit the volume paths and config:
+See example of docker compose file in [`docker-compose.template.yaml`](docker-compose.template.yaml).
+
+Set `user` in `docker-compose.yaml` to the `uid:gid` of `jfmo:media` (created above):
 
 ```bash
-cp docker-compose.template.yaml docker-compose.yaml
-cp config.template.yaml config.yaml
-nano config.yaml          # set directories, TMDB key, etc.
-nano docker-compose.yaml  # set volume paths to match your host
+id jfmo                # get uid
+getent group media     # get gid
+```
+
+**1. Set up files:**
+
+```bash
+sudo mkdir -p /opt/jfmo
+cd /opt/jfmo
+sudo vim docker-compose.yaml
 ```
 
 Start as a background daemon (restarts automatically on reboot):
 
 ```bash
-docker compose up -d
+sudo docker compose up -d
 ```
 
 Run once manually (e.g. to process a backlog):
 
 ```bash
 # Dry-run preview — no files moved
-docker compose run --rm jfmo run
+sudo docker compose run --rm jfmo run
 
 # Apply changes
-docker compose run --rm jfmo run --apply
+sudo docker compose run --rm jfmo run --apply
+```
+
+## Update
+
+### pipx
+
+```bash
+sudo pipx upgrade jfmo --global
+sudo systemctl restart jfmo
+```
+
+### Docker
+
+```bash
+sudo docker compose pull
+sudo docker compose up -d
 ```
 
 ## Usage
@@ -129,21 +155,32 @@ jfmo daemon           # watch downloads directory continuously
 jfmo --version
 ```
 
-## Configuration
-
-Default config path: `/etc/jfmo/config.yaml`. See `config.template.yaml` for all options.
-
 ## Naming
 
-Tokens with no value are removed cleanly along with their surrounding delimiters:
+### Available tokens
 
-```
-# tmdb_id unknown:
-"{title} ({year}) [tmdbid-{tmdb_id}]" → "Inception (2010)"
+| Token             | Description                 | Example                     |
+| ----------------- | --------------------------- | --------------------------- |
+| `{title}`         | Media title                 | `Inception`                 |
+| `{year}`          | Release year                | `2010`                      |
+| `{tmdb_id}`       | TMDB numeric ID             | `27205`                     |
+| `{quality}`       | Resolution label            | `[1080p]`                   |
+| `{season}`        | Season number, zero-padded  | `01`                        |
+| `{episode}`       | Episode number, zero-padded | `04`                        |
+| `{source}`        | Release source              | `WEB-DL`, `BluRay`, `BDRip` |
+| `{codec}`         | Video codec                 | `x265`, `HEVC`, `AV1`       |
+| `{hdr}`           | HDR format                  | `HDR10`, `DV`, `DoVi`       |
+| `{service}`       | Streaming service           | `NF`, `AMZN`, `DSNP`        |
+| `{release_group}` | Release group name          | `LostFilm`, `NOOBDL`        |
 
-# quality unknown:
-"{title} S{season}E{episode} - {quality}" → "Breaking Bad S01E05"
-```
+Each pattern only accepts a specific subset of tokens:
+
+| Pattern (`naming.`) | Allowed tokens                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `movie.file`        | `title`, `year`, `tmdb_id`, `quality`, `source`, `codec`, `hdr`, `service`, `release_group`   |
+| `tv.folder`         | `title`, `year`, `tmdb_id`                                                                    |
+| `tv.season`         | `season`                                                                                      |
+| `tv.file`           | `title`, `season`, `episode`, `quality`, `source`, `codec`, `hdr`, `service`, `release_group` |
 
 ### Example: before → after
 

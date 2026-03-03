@@ -1,0 +1,59 @@
+name: Feature request
+description: Suggest a new feature or improvement
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: checkboxes
+    id: existing
+    attributes:
+      label: Is there an existing request for this?
+      description: Please search [existing issues](https://github.com/StafLoker/jellyfin-format-media-organizer/issues) before creating a new one.
+      options:
+        - label: I have searched the existing issues
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What problem does this feature solve? What limitation are you running into?
+      placeholder: "I'm always frustrated when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you would like. Include examples of expected input/output if applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or workarounds you have considered?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Area of the project
+      description: Which part of JFMO does this relate to?
+      options:
+        - Parser (filename detection)
+        - Formatter (output naming)
+        - TMDB integration
+        - Daemon (file watcher)
+        - CLI
+        - Configuration
+        - Docker
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any other context, screenshots, or examples that would help.

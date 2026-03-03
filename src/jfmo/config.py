@@ -6,12 +6,34 @@ from pathlib import Path
 import yaml
 from loguru import logger
 
+from .parser.tokens import Token
+
 # Valid tokens per naming pattern
-_VALID_TOKENS: dict[str, set[str]] = {
-    "naming.movies.file": {"title", "year", "quality", "tmdb_id"},
-    "naming.tv.folder": {"title", "year", "tmdb_id"},
-    "naming.tv.season": {"season"},
-    "naming.tv.file": {"title", "season", "episode", "quality"},
+_VALID_TOKENS: dict[str, set[Token]] = {
+    "naming.movie.file": {
+        Token.TITLE,
+        Token.YEAR,
+        Token.QUALITY,
+        Token.TMDB_ID,
+        Token.SOURCE,
+        Token.CODEC,
+        Token.HDR,
+        Token.SERVICE,
+        Token.RELEASE_GROUP,
+    },
+    "naming.tv.folder": {Token.TITLE, Token.YEAR, Token.TMDB_ID},
+    "naming.tv.season": {Token.SEASON},
+    "naming.tv.file": {
+        Token.TITLE,
+        Token.SEASON,
+        Token.EPISODE,
+        Token.QUALITY,
+        Token.SOURCE,
+        Token.CODEC,
+        Token.HDR,
+        Token.SERVICE,
+        Token.RELEASE_GROUP,
+    },
 }
 
 
@@ -22,7 +44,7 @@ class Config:
         self.DAEMON_INTERVAL_SEC: int = 30
 
         self.DOWNLOADS_DIR: str
-        self.FILMS_DIR: str
+        self.MOVIES_DIR: str
         self.TV_DIR: str
 
         # Naming format tokens
@@ -40,12 +62,13 @@ class Config:
     def _setup_logger(self) -> None:
         logger.remove()
 
-        logger.add(
-            sys.stderr,
-            colorize=True,
-            level=self.LOG_LEVEL,
-            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>",
-        )
+        if self.DAEMON_MODE:
+            logger.add(
+                sys.stderr,
+                colorize=True,
+                level=self.LOG_LEVEL,
+                format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>",
+            )
 
         log_dir = Path("/var/log/jfmo")
         try:
@@ -100,16 +123,16 @@ class Config:
                     self.DOWNLOADS_DIR = dl["path"]
             if "media" in dirs:
                 media = dirs["media"]
-                if "films" in media:
-                    self.FILMS_DIR = media["films"]
+                if "movies" in media:
+                    self.MOVIES_DIR = media["movies"]
                 if "tv" in media:
                     self.TV_DIR = media["tv"]
 
         # Naming tokens
         if "naming" in data:
             naming = data["naming"]
-            if "movies" in naming and isinstance(naming["movies"], dict) and "file" in naming["movies"]:
-                self.FORMAT_MOVIE_FILE = naming["movies"]["file"]
+            if "movie" in naming and isinstance(naming["movie"], dict) and "file" in naming["movie"]:
+                self.FORMAT_MOVIE_FILE = naming["movie"]["file"]
             if "tv" in naming and isinstance(naming["tv"], dict):
                 tv = naming["tv"]
                 if "folder" in tv:
@@ -135,7 +158,7 @@ class Config:
         errors: list[str] = []
 
         # Required directory attributes must be set
-        for attr in ("DOWNLOADS_DIR", "FILMS_DIR", "TV_DIR"):
+        for attr in ("DOWNLOADS_DIR", "MOVIES_DIR", "TV_DIR"):
             if not hasattr(self, attr):
                 errors.append(f"Required directory not configured: '{attr.lower()}'")
             else:
@@ -158,7 +181,7 @@ class Config:
         token_pattern = re.compile(r"\{(\w+)\}")
 
         for label, pattern in [
-            ("naming.movies.file", self.FORMAT_MOVIE_FILE),
+            ("naming.movie.file", self.FORMAT_MOVIE_FILE),
             ("naming.tv.folder", self.FORMAT_TV_FOLDER),
             ("naming.tv.season", self.FORMAT_TV_SEASON_FOLDER),
             ("naming.tv.file", self.FORMAT_TV_FILE),
@@ -174,7 +197,7 @@ class Config:
         return (
             f"Current configuration:\n"
             f"  Download: {self.DOWNLOADS_DIR}\n"
-            f"  Films: {self.FILMS_DIR} - TV: {self.TV_DIR}\n"
+            f"  Movies: {self.MOVIES_DIR} - TV: {self.TV_DIR}\n"
             f"  Daemon Interval: {self.DAEMON_INTERVAL_SEC} sec\n"
             f"  TMDB Integration: {'enable' if self.TMDB_API_KEY else 'disable'}"
         )
