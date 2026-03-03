@@ -27,27 +27,30 @@ class Formatter:
         return self._movie.process(ctx)
 
     def format_directory(self, dirpath: str) -> list[ProcessResult]:
-        dir_name = os.path.basename(dirpath)
-
-        # Parse directory name through the pipeline to extract season and title
-        dir_ctx = self._parser.parse(dir_name)
-        dir_season = dir_ctx.tokens.get("season")
-        dir_title = dir_ctx.tokens.get("title", "")
+        root_ctx = self._parser.parse(os.path.basename(dirpath))
+        root_season = root_ctx.tokens.get("season")
+        root_title = root_ctx.tokens.get("title", "")
 
         results: list[ProcessResult] = []
-        for root, _, files in os.walk(dirpath):
+        for current_dir, _, files in os.walk(dirpath):
+            # Determine season: filename > subdirectory > root dir > None
+            if current_dir == dirpath:
+                effective_season = root_season
+            else:
+                sub_ctx = self._parser.parse(os.path.basename(current_dir))
+                effective_season = sub_ctx.tokens.get("season") or root_season
+
             for file in files:
                 if is_video_file(file):
-                    filepath = os.path.join(root, file)
-                    tokens = {"season": dir_season} if dir_season else {}
+                    filepath = os.path.join(current_dir, file)
+                    tokens = {"season": effective_season} if effective_season else {}
                     seed = ParseContext(filepath=filepath, tokens=tokens)
                     ctx = self._parser.parse(filepath, seed=seed)
                     if ctx.skip_reason:
                         logger.info(f"Skipped {file}: {ctx.skip_reason}")
                         continue
-                    # Fall back to directory-derived title when file has none
-                    if not ctx.tokens.get("title") and dir_title:
-                        ctx.tokens["title"] = Transliterator.transliterate_text(dir_title)
+                    if not ctx.tokens.get("title") and root_title:
+                        ctx.tokens["title"] = Transliterator.transliterate_text(root_title)
                     else:
                         ctx.tokens["title"] = Transliterator.transliterate_text(ctx.tokens.get("title", ""))
                     results.append(self._tv.process(ctx))
