@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   packages: write
+  attestations: write
   id-token: write
 
 concurrency:
@@ -44,18 +45,17 @@ jobs:
           name: dist
           path: dist/*
 
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/*
+
   publish-docker:
     needs: ci
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - name: Get version from tag
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -67,16 +67,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/jfmo
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+
       - name: Build and push Docker image
+        id: push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/jfmo:latest
-            ghcr.io/${{ github.repository_owner }}/jfmo:${{ steps.version.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/jfmo
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
 
   github-release:
     needs: [publish-pypi, publish-docker]
@@ -120,27 +138,27 @@ jobs:
 
             ${{ steps.changelog.outputs.notes }}
 
-            ## 📦 Install with pipx
+            ## Install with pipx
 
-            ### 📦 Latest
+            ### Latest
             ```bash
             sudo pipx install jfmo --global
             ```
 
-            ### 🏷 Versioned
+            ### Versioned
             ```bash
             sudo pipx install jfmo==${{ steps.version.outputs.version }} --global
             ```
             ---
-            ## 🐳 Docker Images
+            ## Docker Images
 
-            ### 📦 Latest
+            ### Latest
             ```bash
             docker pull ghcr.io/${{ github.repository_owner }}/jfmo:latest
             ```
 
-            ### 🏷 Versioned
+            ### Versioned
             ```bash
             docker pull ghcr.io/${{ github.repository_owner }}/jfmo:${{ steps.version.outputs.version }}
-            ````
+            ```
           files: dist/*
