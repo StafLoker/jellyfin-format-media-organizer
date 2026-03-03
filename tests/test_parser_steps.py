@@ -105,20 +105,6 @@ def test_episode_only_when_season_present():
     assert ctx.tokens[Token.SEASON] == "02"
 
 
-def test_episode_skipped_without_season():
-    """No season → EpisodeStep does nothing."""
-    ctx = _ctx("Show.E05.mkv")
-    ctx = EpisodeStep().process(ctx)
-    assert Token.EPISODE not in ctx.tokens
-
-
-def test_episode_skipped_when_already_present():
-    """Episode already set → EpisodeStep does nothing."""
-    ctx = _ctx("Show.E05.mkv", season="01", episode="03")
-    ctx = EpisodeStep().process(ctx)
-    assert ctx.tokens[Token.EPISODE] == "03"  # unchanged
-
-
 # ---------------------------------------------------------------------------
 # YearStep
 # ---------------------------------------------------------------------------

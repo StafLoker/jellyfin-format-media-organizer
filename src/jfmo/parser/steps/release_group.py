@@ -3,7 +3,7 @@ import re
 from ..context import ParseContext
 from ..tokens import Token
 
-_RELEASE_GROUP = re.compile(r"-([A-Za-z][A-Za-z0-9]+)$")
+_RELEASE_GROUP = re.compile(r"-([A-Za-z][A-Za-z0-9]+)$")  # trailing -GroupName
 
 
 class ReleaseGroupStep:

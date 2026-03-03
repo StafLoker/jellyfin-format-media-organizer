@@ -6,7 +6,7 @@ from ..tokens import Token
 _CODEC = re.compile(
     r"\b(x264|x265|H\.?264|H\.?265|HEVC|AVC|VP9|AV1)\b",
     re.IGNORECASE,
-)
+)  # x264, x265, H.264, H.265, HEVC, AVC, VP9, AV1
 
 
 class CodecStep:

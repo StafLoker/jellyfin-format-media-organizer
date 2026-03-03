@@ -4,7 +4,6 @@ from ..context import ParseContext
 from ..tokens import Token
 
 _STANDARD = re.compile(r"(480|720|1080|2160|4320)p", re.IGNORECASE)  # 720p, 1080p, 2160p, 4320p
-_CYRILLIC_P = re.compile(r"(240|352|480|576|720|1080|2160|4320)р")  # 1080р (Cyrillic р)
 
 _RESOLUTION_MAP = [
     (re.compile(r"1920\s*[xX]\s*1080"), "1080p"),  # 1920x1080
@@ -37,10 +36,6 @@ def _detect_quality(name: str) -> str:
     match = _STANDARD.search(name)
     if match:
         return f"[{match.group(0)}]"
-
-    match = _CYRILLIC_P.search(name)
-    if match:
-        return f"[{match.group(1)}p]"
 
     for pattern, quality in _RESOLUTION_MAP:
         if pattern.search(name):

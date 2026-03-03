@@ -6,7 +6,7 @@ from ..tokens import Token
 _SOURCE = re.compile(
     r"\b(WEB-DL|WEBDL|WEB-?Rip|WEBRip|BluRay|BDRip|BRRip|DVDRip|HDTV|PDTV|SDTV|CAM|TS|TC|SCR|R5|DVDScr)\b",
     re.IGNORECASE,
-)
+)  # WEB-DL, BluRay, DVDRip, HDTV, CAM, TS, ...
 
 
 class SourceStep:

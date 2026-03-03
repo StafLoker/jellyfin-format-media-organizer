@@ -5,7 +5,7 @@ from ..tokens import Token
 
 _SERVICE = re.compile(
     r"\b(NF|AMZN|DSNP|HMAX|ATVP|PCOK|PMTP|iT|STAN|CRAV|MA)\b",
-)
+)  # Netflix, Amazon, Disney+, HBO Max, Apple TV+, Peacock, Paramount+, iTunes, Stan, Crave, Movies Anywhere
 
 
 class ServiceStep:

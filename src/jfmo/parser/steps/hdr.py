@@ -6,7 +6,7 @@ from ..tokens import Token
 _HDR = re.compile(
     r"\b(Dolby[.\s]?Vision|DoVi|HDR10\+|HDR10Plus|HDR10|HDR|DV|SDR)\b",
     re.IGNORECASE,
-)
+)  # Dolby Vision, DoVi, HDR10+, HDR10, HDR, DV, SDR
 
 
 class HdrStep:
