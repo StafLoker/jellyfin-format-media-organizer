@@ -61,8 +61,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/jfmo:latest
+            ghcr.io/${{ github.repository_owner }}/jfmo:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -79,23 +79,23 @@ jobs:
 
             ### 📦 Latest
             ```bash
-            pipx install jfmo
+            sudo pipx install jfmo --global
             ```
 
             ### 🏷 Versioned
             ```bash
-            pipx install jfmo==${{ steps.version.outputs.version }}
+            sudo pipx install jfmo==${{ steps.version.outputs.version }} --global
             ```
             --- 
             ## 🐳 Docker Images
 
             ### 📦 Latest
             ```bash
-            docker pull ghcr.io/${{ github.repository }}:latest
+            docker pull ghcr.io/${{ github.repository_owner }}/jfmo:latest
             ```
 
             ### 🏷 Versioned
             ```bash
-            docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+            docker pull ghcr.io/${{ github.repository_owner }}/jfmo:${{ steps.version.outputs.version }}
             ````
           files: dist/*

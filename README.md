@@ -34,7 +34,7 @@ Automatically organizes and renames media files according to [Jellyfin's naming 
 **1. Install the package:**
 
 ```bash
-pipx install jfmo
+sudo pipx install jfmo --global
 ```
 
 **2. Create a system user and add it to the `media` group:**

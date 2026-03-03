@@ -3,14 +3,14 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Copy project files
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 COPY src/ ./src/
 
-# Install dependencies (no dev deps, frozen lockfile)
-RUN uv sync --frozen --no-dev
+# Install dependencies
+RUN uv sync --no-dev
 
 ENTRYPOINT ["uv", "run", "jfmo"]
 
