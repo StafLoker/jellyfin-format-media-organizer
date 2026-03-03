@@ -10,8 +10,8 @@
 
 <div align="center">
   <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases"><img src="https://img.shields.io/github/release-pre/StafLoker/jellyfin-format-media-organizer.svg?style=flat" alt="latest version"/></a>
-  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI/CD Build"/></a>
-  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml/badge.svg?branch=main" alt="Tests"/></a>
+  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/></a>
+  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/release.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/release.yml/badge.svg" alt="Release"/></a>
   <a href="https://pypi.org/project/jfmo/"><img src="https://img.shields.io/pypi/dm/jfmo?style=flat&label=PyPI%20downloads" alt="PyPI downloads"/></a>
 </div>
 

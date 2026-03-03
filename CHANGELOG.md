@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.0.0] - 2026-03-03
 
 ### Added
-- Pipeline-based parser with individual steps (extension, season/episode, year, quality, media type, title)
+- Pipeline-based parser with individual steps (extension, season/episode, year, quality, media type, title, ...)
 - Dependency injection container for service management
 - Token formatter for flexible pattern-based file naming
 - N-gram language detection
