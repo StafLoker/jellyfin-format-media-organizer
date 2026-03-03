@@ -62,27 +62,3 @@ def link_file(source_file: str, dest_file: str, dry_run: bool = False) -> bool:
     except OSError as e:
         logger.error(f"ERROR LINKING (os error): {source_file} -> {dest_file} ({e})")
         return False
-
-
-def remove_empty_dir(directory: str, dry_run: bool = False) -> bool:
-    if not os.path.exists(directory):
-        return False
-
-    if dry_run:
-        if not os.listdir(directory):
-            logger.info(f"DRY RUN - Would remove empty directory: {directory}")
-            return True
-        return False
-
-    try:
-        if not os.listdir(directory):
-            os.rmdir(directory)
-            logger.info(f"REMOVED EMPTY DIRECTORY: {directory}")
-            return True
-        return False
-    except PermissionError as e:
-        logger.warning(f"Permission denied removing directory {directory}: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"Failed to remove directory {directory}: {e}")
-        return False
