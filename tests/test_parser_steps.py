@@ -15,6 +15,7 @@ from jfmo.parser.steps import (
     TitleStep,
     YearStep,
 )
+from jfmo.parser.tokens import Token
 
 
 def _ctx(filename: str, **tokens) -> ParseContext:
@@ -59,8 +60,8 @@ def test_extension_step(filename, expected_stem, expected_ext):
 )
 def test_season_extracts_season_leaves_episode(filename, season, leftover_episode):
     ctx = SeasonStep().process(_ctx(filename))
-    assert ctx.tokens["season"] == season
-    assert "episode" not in ctx.tokens
+    assert ctx.tokens[Token.SEASON] == season
+    assert Token.EPISODE not in ctx.tokens
     assert leftover_episode in ctx.working_name
 
 
@@ -72,14 +73,14 @@ def test_season_removes_season_marker_from_working_name():
 
 def test_season_not_detected():
     ctx = SeasonStep().process(_ctx("Inception.2010.1080p.mkv"))
-    assert "season" not in ctx.tokens
+    assert Token.SEASON not in ctx.tokens
 
 
 def test_standalone_season():
     """Standalone S02 pattern (e.g. directory name)."""
     ctx = SeasonStep().process(_ctx("Breaking.Bad.S02"))
-    assert ctx.tokens["season"] == "02"
-    assert "episode" not in ctx.tokens
+    assert ctx.tokens[Token.SEASON] == "02"
+    assert Token.EPISODE not in ctx.tokens
     assert "S02" not in ctx.working_name
 
 
@@ -92,7 +93,7 @@ def test_episode_from_season_step_leftover():
     """EpisodeStep picks up the E05 leftover from SeasonStep."""
     ctx = _ctx("Show.E05.720p", season="01")
     ctx = EpisodeStep().process(ctx)
-    assert ctx.tokens["episode"] == "05"
+    assert ctx.tokens[Token.EPISODE] == "05"
     assert "E05" not in ctx.working_name
 
 
@@ -100,22 +101,22 @@ def test_episode_only_when_season_present():
     """When season comes from directory seed, detect episode-only pattern."""
     ctx = _ctx("Show.E05.mkv", season="02")
     ctx = EpisodeStep().process(ctx)
-    assert ctx.tokens["episode"] == "05"
-    assert ctx.tokens["season"] == "02"
+    assert ctx.tokens[Token.EPISODE] == "05"
+    assert ctx.tokens[Token.SEASON] == "02"
 
 
 def test_episode_skipped_without_season():
     """No season → EpisodeStep does nothing."""
     ctx = _ctx("Show.E05.mkv")
     ctx = EpisodeStep().process(ctx)
-    assert "episode" not in ctx.tokens
+    assert Token.EPISODE not in ctx.tokens
 
 
 def test_episode_skipped_when_already_present():
     """Episode already set → EpisodeStep does nothing."""
     ctx = _ctx("Show.E05.mkv", season="01", episode="03")
     ctx = EpisodeStep().process(ctx)
-    assert ctx.tokens["episode"] == "03"  # unchanged
+    assert ctx.tokens[Token.EPISODE] == "03"  # unchanged
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +134,7 @@ def test_episode_skipped_when_already_present():
 )
 def test_year_detected(filename, year):
     ctx = YearStep().process(_ctx(filename))
-    assert ctx.tokens["year"] == year
+    assert ctx.tokens[Token.YEAR] == year
 
 
 def test_year_removes_from_working_name():
@@ -143,7 +144,7 @@ def test_year_removes_from_working_name():
 
 def test_year_not_detected():
     ctx = YearStep().process(_ctx("Show.S01E01.mkv"))
-    assert "year" not in ctx.tokens
+    assert Token.YEAR not in ctx.tokens
 
 
 # ---------------------------------------------------------------------------
@@ -164,7 +165,7 @@ def test_year_not_detected():
 )
 def test_source_detected(filename, source):
     ctx = SourceStep().process(_ctx(filename))
-    assert ctx.tokens["source"] == source
+    assert ctx.tokens[Token.SOURCE] == source
 
 
 def test_source_removes_from_working_name():
@@ -174,7 +175,7 @@ def test_source_removes_from_working_name():
 
 def test_source_not_detected():
     ctx = SourceStep().process(_ctx("Movie.1080p.mkv"))
-    assert "source" not in ctx.tokens
+    assert Token.SOURCE not in ctx.tokens
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +196,7 @@ def test_source_not_detected():
 )
 def test_codec_detected(filename, codec):
     ctx = CodecStep().process(_ctx(filename))
-    assert ctx.tokens["codec"] == codec
+    assert ctx.tokens[Token.CODEC] == codec
 
 
 def test_codec_removes_from_working_name():
@@ -205,7 +206,7 @@ def test_codec_removes_from_working_name():
 
 def test_codec_not_detected():
     ctx = CodecStep().process(_ctx("Movie.1080p.mkv"))
-    assert "codec" not in ctx.tokens
+    assert Token.CODEC not in ctx.tokens
 
 
 # ---------------------------------------------------------------------------
@@ -225,7 +226,7 @@ def test_codec_not_detected():
 )
 def test_hdr_detected(filename, hdr):
     ctx = HdrStep().process(_ctx(filename))
-    assert ctx.tokens["hdr"] == hdr
+    assert ctx.tokens[Token.HDR] == hdr
 
 
 def test_hdr_removes_from_working_name():
@@ -235,7 +236,7 @@ def test_hdr_removes_from_working_name():
 
 def test_hdr_not_detected():
     ctx = HdrStep().process(_ctx("Movie.1080p.mkv"))
-    assert "hdr" not in ctx.tokens
+    assert Token.HDR not in ctx.tokens
 
 
 # ---------------------------------------------------------------------------
@@ -255,7 +256,7 @@ def test_hdr_not_detected():
 )
 def test_service_detected(filename, service):
     ctx = ServiceStep().process(_ctx(filename))
-    assert ctx.tokens["service"] == service
+    assert ctx.tokens[Token.SERVICE] == service
 
 
 def test_service_removes_from_working_name():
@@ -265,7 +266,7 @@ def test_service_removes_from_working_name():
 
 def test_service_not_detected():
     ctx = ServiceStep().process(_ctx("Movie.WEB-DL.1080p"))
-    assert "service" not in ctx.tokens
+    assert Token.SERVICE not in ctx.tokens
 
 
 # ---------------------------------------------------------------------------
@@ -284,7 +285,7 @@ def test_service_not_detected():
 def test_release_group_detected(working_name, release_group):
     ctx = ParseContext(filepath="/downloads/x.mkv", working_name=working_name)
     ctx = ReleaseGroupStep().process(ctx)
-    assert ctx.tokens["release_group"] == release_group
+    assert ctx.tokens[Token.RELEASE_GROUP] == release_group
 
 
 def test_release_group_removes_from_working_name():
@@ -297,7 +298,7 @@ def test_release_group_removes_from_working_name():
 def test_release_group_not_detected():
     ctx = ParseContext(filepath="/downloads/x.mkv", working_name="Movie.1080p")
     ctx = ReleaseGroupStep().process(ctx)
-    assert "release_group" not in ctx.tokens
+    assert Token.RELEASE_GROUP not in ctx.tokens
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +320,7 @@ def test_release_group_not_detected():
 )
 def test_quality_detected(filename, quality):
     ctx = QualityStep().process(_ctx(filename))
-    assert ctx.tokens["quality"] == quality
+    assert ctx.tokens[Token.QUALITY] == quality
 
 
 def test_quality_strips_tags_from_working_name():
@@ -330,7 +331,7 @@ def test_quality_strips_tags_from_working_name():
 
 def test_quality_not_detected():
     ctx = QualityStep().process(_ctx("Movie.no.quality.mkv"))
-    assert "quality" not in ctx.tokens
+    assert Token.QUALITY not in ctx.tokens
 
 
 # ---------------------------------------------------------------------------
@@ -395,7 +396,7 @@ def test_media_type_ambiguous(filename):
 def test_title_step(working_name, expected_title):
     ctx = ParseContext(filepath="/downloads/x.mkv", working_name=working_name)
     ctx = TitleStep().process(ctx)
-    assert ctx.tokens["title"] == expected_title
+    assert ctx.tokens[Token.TITLE] == expected_title
 
 
 # ---------------------------------------------------------------------------
@@ -426,11 +427,11 @@ def test_pipeline_tv_episode():
     """Full chain on a typical TV filename."""
     ctx = _full_pipeline().parse("/downloads/The.Office.S03E07.720p.BluRay.mkv")
 
-    assert ctx.tokens["season"] == "03"
-    assert ctx.tokens["episode"] == "07"
-    assert ctx.tokens["quality"] == "[720p]"
-    assert ctx.tokens["source"] == "BluRay"
-    assert ctx.tokens["title"] == "The Office"
+    assert ctx.tokens[Token.SEASON] == "03"
+    assert ctx.tokens[Token.EPISODE] == "07"
+    assert ctx.tokens[Token.QUALITY] == "[720p]"
+    assert ctx.tokens[Token.SOURCE] == "BluRay"
+    assert ctx.tokens[Token.TITLE] == "The Office"
     assert ctx.extension == ".mkv"
     assert ctx.media_type == MediaType.TV
 
@@ -439,10 +440,10 @@ def test_pipeline_movie():
     """Full chain on a typical movie filename."""
     ctx = _full_pipeline().parse("/downloads/Inception.2010.1080p.BluRay.mkv")
 
-    assert ctx.tokens["year"] == "2010"
-    assert ctx.tokens["quality"] == "[1080p]"
-    assert ctx.tokens["source"] == "BluRay"
-    assert ctx.tokens["title"] == "Inception"
+    assert ctx.tokens[Token.YEAR] == "2010"
+    assert ctx.tokens[Token.QUALITY] == "[1080p]"
+    assert ctx.tokens[Token.SOURCE] == "BluRay"
+    assert ctx.tokens[Token.TITLE] == "Inception"
     assert ctx.extension == ".mkv"
     assert ctx.media_type == MediaType.MOVIE
 
@@ -451,10 +452,10 @@ def test_pipeline_lostfilm():
     """LostFilm release: all tags cleaned properly."""
     ctx = _full_pipeline().parse("/downloads/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.rus.LostFilm.TV.mkv")
 
-    assert ctx.tokens["season"] == "01"
-    assert ctx.tokens["episode"] == "04"
-    assert ctx.tokens["quality"] == "[1080p]"
-    assert ctx.tokens["title"] == "A Knight of the Seven Kingdoms"
+    assert ctx.tokens[Token.SEASON] == "01"
+    assert ctx.tokens[Token.EPISODE] == "04"
+    assert ctx.tokens[Token.QUALITY] == "[1080p]"
+    assert ctx.tokens[Token.TITLE] == "A Knight of the Seven Kingdoms"
     assert ctx.media_type == MediaType.TV
 
 
@@ -462,33 +463,33 @@ def test_pipeline_frankenstein_nf():
     """NF service and WEB-DL source cleaned from title."""
     ctx = _full_pipeline().parse("/downloads/Frankenstein.2025.NF.WEB-DL.2160p.mkv")
 
-    assert ctx.tokens["title"] == "Frankenstein"
-    assert ctx.tokens["service"] == "NF"
-    assert ctx.tokens["source"] == "WEB-DL"
-    assert ctx.tokens["quality"] == "[2160p]"
-    assert ctx.tokens["year"] == "2025"
+    assert ctx.tokens[Token.TITLE] == "Frankenstein"
+    assert ctx.tokens[Token.SERVICE] == "NF"
+    assert ctx.tokens[Token.SOURCE] == "WEB-DL"
+    assert ctx.tokens[Token.QUALITY] == "[2160p]"
+    assert ctx.tokens[Token.YEAR] == "2025"
 
 
 def test_pipeline_white_bird_dv_release_group():
     """DV hdr and release group extracted."""
     ctx = _full_pipeline().parse("/downloads/White.Bird.2023.2160p.WEB-DL.DV-TheEqualizer.mp4")
 
-    assert ctx.tokens["title"] == "White Bird"
-    assert ctx.tokens["year"] == "2023"
-    assert ctx.tokens["hdr"] == "DV"
-    assert ctx.tokens["release_group"] == "TheEqualizer"
-    assert ctx.tokens["source"] == "WEB-DL"
-    assert ctx.tokens["quality"] == "[2160p]"
+    assert ctx.tokens[Token.TITLE] == "White Bird"
+    assert ctx.tokens[Token.YEAR] == "2023"
+    assert ctx.tokens[Token.HDR] == "DV"
+    assert ctx.tokens[Token.RELEASE_GROUP] == "TheEqualizer"
+    assert ctx.tokens[Token.SOURCE] == "WEB-DL"
+    assert ctx.tokens[Token.QUALITY] == "[2160p]"
 
 
 def test_pipeline_mollys_game_bdrip():
     """BDRip source extracted."""
     ctx = _full_pipeline().parse("/downloads/Mollys Game 2017 BDRip 1080p.mkv")
 
-    assert ctx.tokens["title"] == "Mollys Game"
-    assert ctx.tokens["source"] == "BDRip"
-    assert ctx.tokens["year"] == "2017"
-    assert ctx.tokens["quality"] == "[1080p]"
+    assert ctx.tokens[Token.TITLE] == "Mollys Game"
+    assert ctx.tokens[Token.SOURCE] == "BDRip"
+    assert ctx.tokens[Token.YEAR] == "2017"
+    assert ctx.tokens[Token.QUALITY] == "[1080p]"
 
 
 def test_pipeline_ambiguous_skips():
@@ -503,6 +504,6 @@ def test_pipeline_dirname():
     """Pipeline correctly parses a directory name (no extension, standalone season)."""
     ctx = _full_pipeline().parse("Breaking.Bad.S02")
 
-    assert ctx.tokens["season"] == "02"
-    assert ctx.tokens["title"] == "Breaking Bad"
-    assert "episode" not in ctx.tokens
+    assert ctx.tokens[Token.SEASON] == "02"
+    assert ctx.tokens[Token.TITLE] == "Breaking Bad"
+    assert Token.EPISODE not in ctx.tokens
