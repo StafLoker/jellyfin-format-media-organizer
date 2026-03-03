@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: ['release/v*', 'develop']
   pull_request:
     branches: ['main', 'develop']
   workflow_call:
@@ -11,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
