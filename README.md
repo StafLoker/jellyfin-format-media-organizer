@@ -46,7 +46,7 @@ sudo chmod -R g+rw /data/media
 
 **2. Set up the config:**
 
-Default config path: `/etc/jfmo/config.yaml`. See `config.template.yaml` for all options.
+Default config path: `/etc/jfmo/config.yaml`. See [`config.template.yaml`](config.template.yaml) for all options.
 
 ```bash
 sudo mkdir -p /etc/jfmo
@@ -97,7 +97,7 @@ sudo -u jfmo -g media jfmo run --apply
 
 ### Option 2 — Docker
 
-See example of docker compose file in `docker-compose.template.yaml`.
+See example of docker compose file in [`docker-compose.template.yaml`](docker-compose.template.yaml).
 
 Set `user` in `docker-compose.yaml` to the `uid:gid` of `jfmo:media` (created above):
 
