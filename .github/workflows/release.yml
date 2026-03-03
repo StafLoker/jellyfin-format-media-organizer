@@ -90,6 +90,17 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$GITHUB_REF_NAME" >> $GITHUB_OUTPUT
 
+      - uses: actions/checkout@v6
+
+      - name: Extract changelog for version
+        id: changelog
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          NOTES=$(awk "/^## \[$VERSION\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Download dist artifacts
         uses: actions/download-artifact@v4
         with:
@@ -104,6 +115,10 @@ jobs:
           generate_release_notes: true
           body: |
             # JFMO ${{ steps.version.outputs.tag }}
+
+            ## Changelog
+
+            ${{ steps.changelog.outputs.notes }}
 
             ## 📦 Install with pipx
 
