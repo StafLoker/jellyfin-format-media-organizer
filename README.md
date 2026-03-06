@@ -10,7 +10,6 @@
 
 <div align="center">
   <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/releases"><img src="https://img.shields.io/github/release-pre/StafLoker/jellyfin-format-media-organizer.svg?style=flat" alt="latest version"/></a>
-  <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/></a>
   <a href="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/release.yml"><img src="https://github.com/StafLoker/jellyfin-format-media-organizer/actions/workflows/release.yml/badge.svg" alt="Release"/></a>
   <a href="https://pypi.org/project/jfmo/"><img src="https://img.shields.io/pypi/dm/jfmo?style=flat&label=PyPI%20downloads" alt="PyPI downloads"/></a>
 </div>
@@ -41,7 +40,13 @@ Make sure your media directories are owned or readable by the `media` group:
 
 ```bash
 sudo chown -R :media /data/media
-sudo chmod -R g+rw /data/media
+sudo chmod -R 775 /data/media
+sudo chmod g+s /data/media
+sudo chmod g+s /data/media/download
+sudo chmod g+s /data/media/download/manual
+sudo chmod g+s /data/media/download/incomplete
+sudo chmod g+s /data/media/movies
+sudo chmod g+s /data/media/tv
 ```
 
 **2. Set up the config:**
@@ -72,7 +77,7 @@ After=network.target
 [Service]
 Type=simple
 User=jfmo
-Group=media
+Group=jfmo
 ExecStart=/usr/local/bin/jfmo daemon
 Restart=on-failure
 RestartSec=10
@@ -92,18 +97,18 @@ sudo systemctl status jfmo
 **Run once manually** (without stopping the daemon):
 
 ```bash
-sudo -u jfmo -g media jfmo run --apply
+sudo -u jfmo jfmo run --apply
 ```
 
 ### Option 2 — Docker
 
 See example of docker compose file in [`docker-compose.template.yaml`](docker-compose.template.yaml).
 
-Set `user` in `docker-compose.yaml` to the `uid:gid` of `jfmo:media` (created above):
+Set `user` in `docker-compose.yaml` to the `uid:gid` of `jfmo:jfmo` (created above):
 
 ```bash
 id jfmo                # get uid
-getent group media     # get gid
+getent group jfmo     # get gid
 ```
 
 **1. Set up files:**
