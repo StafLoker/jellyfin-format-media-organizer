@@ -15,6 +15,7 @@ class FileWatcher:
         self.check_interval = check_interval
         self.formatter = formatter
         self.known_entries: set[str] = set()
+        self.pending_entries: set[str] = set()
         self.stability_tracker = FileStabilityTracker(stability_cycles=2)
         self.stop_event = Event()
         self._cycle = 0
@@ -53,11 +54,11 @@ class FileWatcher:
     def _ts(self) -> str:
         return datetime.now().strftime("%H:%M:%S")
 
-    def _process_new_entry(self, path: str) -> None:
+    def _process_pending_entry(self, path: str) -> bool:
         name = os.path.basename(path)
 
         if not self._is_stable(path):
-            return
+            return False
 
         self._mark_processed(path)
         logger.info(f"New entry: {name}")
@@ -74,6 +75,8 @@ class FileWatcher:
         except Exception as e:
             logger.error(f"Error processing {name}: {e}")
 
+        return True
+
     def start(self) -> None:
         self.known_entries = self._scan_entries()
         logger.info(f"Watching {len(self.known_entries)} existing entries")
@@ -83,10 +86,17 @@ class FileWatcher:
                 current_entries = self._scan_entries()
                 new_entries = current_entries - self.known_entries
 
-                for path in new_entries:
-                    self._process_new_entry(path)
+                self.pending_entries.update(new_entries)
 
-                self.known_entries = current_entries
+                # Keep only entries still on disk; process the stable ones
+                self.pending_entries &= current_entries
+                for path in list(self.pending_entries):
+                    if self._process_pending_entry(path):
+                        self.pending_entries.discard(path)
+                        self.known_entries.add(path)
+
+                # Drop known entries that disappeared from disk
+                self.known_entries &= current_entries
                 self._cycle += 1
 
                 if self._cycle % 10 == 0:
